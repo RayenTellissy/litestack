@@ -59,7 +59,6 @@ Speed comes from never waiting and never doing work twice, not from skipping pro
 - Build the lever. A repeated edit is one scripted pass, per the principle of that name, not a run of hand edits.
 - No double work. Do not re-read a file you just edited. Do not rerun a check whose inputs have not changed. Trim long output with `tail`, `head`, or `grep`.
 - Overlap the review. Start the reviewer the moment verify passes. While it runs, draft the commit message, the PR body, and the reply.
-- Size the effort. Give the reviewer `effort: "medium"` for a chore or refactor whose diff is under about 50 changed lines, and `effort: "high"` otherwise.
 - Do not wait on people or bots. Decide reversible calls and report them. After the PR opens, post the URL and stop.
 
 ## Stop
@@ -76,7 +75,7 @@ To stop, name the Gate line or tripwire that fired, and what the task needs that
 
 ## Review
 
-Make one Agent call with `subagent_type: "litestack-reviewer"`, `run_in_background: true`, and the `effort` that Speed sizes. Overlap it per Speed.
+Make one Agent call with `subagent_type: "litestack-reviewer"`, `effort: "xhigh"`, and `run_in_background: true`. Overlap it per Speed.
 
 Use a different model from this session's, so the review is a second voice. Pass `model: "opus"` when this session runs on Fable, and `model: "fable"` otherwise. If that model is unavailable or rate limited, retry once on the other one and say so in the reply.
 
@@ -87,7 +86,7 @@ The brief holds four parts. Give pointers, not conclusions.
 - Kind. The playbook you ran.
 - Intent. One paragraph on what the change must do and what it must leave unchanged, from the user's request. For a bug, the symptom and the repro.
 - Base. The base ref to diff against, and the untracked files that belong to the change.
-- Checks. The exact pin and verify commands, with roughly how long each took, the path of each piece of evidence the verification skill saved, and any script that made a repeated edit.
+- Checks. The exact pin and verify commands, with roughly how long each took, the path of each piece of evidence the verification skill saved, each comparison script and the path of its kept output, and any script that made a repeated edit.
 
 Leave out your diagnosis, your design rationale, and what you already checked. They anchor the reviewer.
 
@@ -117,4 +116,4 @@ This covers the reply, code comments, commit messages, and the PR. Write it clea
 
 ## Reply
 
-Give the playbook's reply parts in order, written per Writing. Then the review, with the reviewer's model, the findings you fixed, and each dismissed finding with its reason. Then name each principle that changed a decision and the choice it changed. End with the PR link, or the branch and commit when there is no PR, and any stop or open item.
+Give the playbook's reply parts in order, written per Writing. Then the review, with the reviewer's model, the findings you fixed, and each dismissed finding with its reason. Then name each principle that changed a decision and the choice it changed. Name anything you could not verify, and why. End with the PR link, or the branch and commit when there is no PR, and any stop or open item.

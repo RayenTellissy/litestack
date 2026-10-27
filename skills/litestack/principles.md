@@ -30,7 +30,7 @@ Each principle names when it applies and what it asks. Apply every one whose tri
 
 ## Proof
 
-**Prove it works.** Before calling anything done. Check the real artifact: the running app, the CLI's actual output, the built file. "It compiles", a green type check, or a summary of a run is not proof.
+**Prove it works.** Before calling anything done. Check the real artifact directly: the running app, the CLI's actual output, the file or row it wrote, the value read back from its source. "It compiles", a green type check, a cached screenshot, a log line that claims success, or a summary of a run is not proof. Evidence comes from a run after the last edit to anything the check covers. When a check fails, suspect how you observed before you suspect the system. When the proof is a comparison, script it so it reruns the same way, keep its output, and list it in the review brief's Checks so the reviewer reruns it. Say what you could not verify, and why.
 
 **Fix root causes.** Debugging. Trace the symptom back to the first place the system went wrong and fix it there. A guard is a fix only when the state it handles is legitimate. A guard that hides an invalid state is a second bug.
 
