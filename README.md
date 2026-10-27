@@ -1,6 +1,6 @@
 # litestack
 
-A fast, verified workflow for small features, bug fixes, refactors, and chores. Each task runs through a playbook and a fixed set of engineering principles in one session. There are no code-writing delegates, swarms, or multi-model review panels. What stays is the part that catches mistakes. Every change gets a pin before the first edit, verification on the real surface, and one independent review before it ships.
+A fast, verified workflow for small features, bug fixes, refactors, and chores. Each task runs through a playbook and a fixed set of engineering principles in one session. There are no code-writing delegates, swarms, second models, or review panels. What stays is the part that catches mistakes. Every change gets a pin before the first edit, verification on the real surface, and one independent review before it ships.
 
 ## Install
 
@@ -35,12 +35,12 @@ Litestack reads its principles, matches the task to a playbook, and copies the p
 
 A mixed task splits into parts, each with its own playbook and commit.
 
-Feature, and Refactor when the new shape spans more than one function, design before they write logic. The session sketches the types and signatures with stub bodies and designs it twice. It screens both shapes for red flags such as shallow modules, leaked decisions, pass-through layers, and split ownership, then picks the deeper one. It builds against the sketch, treats any surprise the sketch did not plan for as a sign the sketch may be wrong, and scraps the sketch if the build keeps fighting it.
+Feature, and Refactor when the new shape spans more than one function, design before they write logic. The session sketches the types and signatures with stub bodies, and revises the sketch until it is free of red flags such as shallow modules, leaked decisions, pass-through layers, and split ownership. It builds against the sketch, treats any surprise the sketch did not plan for as a sign the sketch may be wrong, and scraps the sketch if the build keeps fighting it.
 
 Every playbook ends the same way.
 
 1. **Verify.** Rerun the pin, the type check, lint, and the touched tests. UI and CLI changes are driven on the real surface, through the project's `verify-*` skill when it has one. Output is pasted verbatim.
-2. **Review.** One read-only `litestack-reviewer` on a different model from the session's. It reruns the fast checks, opens the evidence, and reviews the diff against the principles and the usual small-change traps. The session triages each finding, fixes what is real, and verifies again.
+2. **Review.** One read-only `litestack-reviewer` in a fresh subagent, on the session's model at `xhigh` effort. It sees only the code and a short brief, never the session's reasoning. It reruns the fast checks, opens the evidence, and reviews the diff against the principles and the usual small-change traps. The session triages each finding, fixes what is real, and verifies again.
 3. **Ship.** Small ordered commits in Conventional Commits form, and a ready PR with Why, What changed, Scope, Risk, and Verification sections.
 4. **Reply.** What changed for the user, the pasted proof, the review outcome, the principles that shaped decisions, and the PR link.
 
@@ -55,7 +55,7 @@ Two settings help on your side.
 
 ## Gate
 
-Litestack takes a change in one feature area, at most about 6 files and 300 lines. Public API, schema, and format changes must be additive and backward compatible. It refuses concurrency, auth, permissions, security, payments, and data deletion. A bug qualifies when its mechanism turns up within about three passes. A design qualifies when one shape looks clearly better from reading the code, or a quick probe can settle the fork.
+Litestack takes a change in one feature area, at most about 6 files and 300 lines. Public API, schema, and format changes must be additive and backward compatible. It refuses concurrency, auth, permissions, security, payments, and data deletion. A bug qualifies when its mechanism turns up within about three passes. A design qualifies when one shape is clearly right from reading the code.
 
 When the task fails the gate or outgrows it midway, litestack stops and reports instead of pushing on. The report names the reason and hands over the pin and what it learned.
 

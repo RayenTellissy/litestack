@@ -36,12 +36,12 @@ Litestack fits only when every line holds. Judge it against the code you read in
 - A change to a public API, schema, persisted format, or wire protocol is additive and backward compatible. Nothing needs a data migration or a version bump, or changes what existing callers get.
 - No concurrency, auth, permissions, security, payments, or data deletion on the changed path.
 - For a bug, the code and the repro point at a mechanism you can confirm. The hunt gets about three passes, then you Stop.
-- For a change that needs the design step, one shape already looks clearly better from reading the code, or a quick probe can settle the fork.
+- For a change that needs the design step, one shape is clearly right from reading the code.
 
 ## Rules
 
 - Any code. Name the data shape first, and pick its structure per Model the domain.
-- A "which approach" question. If running something can answer it (behavior, output, layout, timing), write a quick probe and let the result decide. For a product or preference call, take the option closest to existing behavior, act on it, and report it as an open decision. Ask first only when nothing existing suggests a default and a wrong guess would be costly to undo.
+- A "which approach" question. If running something can answer it (behavior, output, layout, timing), run it instead of asking. For a product or preference call, take the option closest to existing behavior, act on it, and report it as an open decision. Ask first only when nothing existing suggests a default and a wrong guess would be costly to undo.
 - A UI, CLI, or TUI change. Drive the real surface. If the project has a verification skill at `.claude/skills/verify-*/SKILL.md`, read it and the file in its `features/` folder for the touched feature. Follow its launch, drive, evidence, and cleanup steps, and cover every entry point the feature file lists. If one of its steps breaks for a reason unrelated to the change, drive the surface directly and report the broken step. Without one, use a browser tool for web and Electron, Bash for a CLI, and `expect` or `script` for a TUI.
 - Every check. Keep its output verbatim. An inconclusive or wrong-surface result is a fail. Fix it or Stop.
 - A tool or skill that breaks mid-task. Say so. Never work around it silently.
@@ -67,18 +67,16 @@ Stop when the Gate fails, or when one of these fires.
 
 - The diff outgrows the Gate's size.
 - A fix attempt fails, and the next one would rest on the same premise.
-- A design fork that neither the red-flag screen nor a probe settles.
-- The build fights the sketch for a second round.
+- No shape is clearly right.
+- The build fights a second sketch too.
 - The review raises a design-level finding.
 - Verification cannot reach the real surface.
 
-To stop, name the Gate line or tripwire that fired, and what the task needs that litestack does not do, such as a longer root-cause hunt, a design tradeoff no probe settles, or a migration plan. Hand over the pin, the repro output, and what you learned. Leave the branch as it is, and list its commits and any uncommitted edits.
+To stop, name the Gate line or tripwire that fired, and what the task needs that litestack does not do, such as a longer root-cause hunt, a design choice between real tradeoffs, or a migration plan. Hand over the pin, the repro output, and what you learned. Leave the branch as it is, and list its commits and any uncommitted edits.
 
 ## Review
 
-Make one Agent call with `subagent_type: "litestack-reviewer"`, `effort: "xhigh"`, and `run_in_background: true`. Overlap it per Speed.
-
-Use a different model from this session's, so the review is a second voice. Pass `model: "opus"` when this session runs on Fable, and `model: "fable"` otherwise. If that model is unavailable or rate limited, retry once on the other one and say so in the reply.
+Make one Agent call with `subagent_type: "litestack-reviewer"`, `effort: "xhigh"`, and `run_in_background: true`. Pass no `model`, so the reviewer runs on this session's model. The reviewer is a fresh subagent with its own empty context, so it sees the code and the brief and nothing of this session. Never fork this session for it, and never resume or message an earlier reviewer. Overlap it per Speed.
 
 If the `litestack-reviewer` agent type does not exist, the session started before the install. Use `subagent_type: "general-purpose"`, and open the brief with "Read `~/.claude/agents/litestack-reviewer.md` in full and follow it. Edit nothing."
 
@@ -117,4 +115,4 @@ This covers the reply, code comments, commit messages, and the PR. Write it clea
 
 ## Reply
 
-Give the playbook's reply parts in order, written per Writing. Then the review, with the reviewer's model, the findings you fixed, and each dismissed finding with its reason. Then name each principle that changed a decision and the choice it changed. Name anything you could not verify, and why. End with the PR link, or the branch and commit when there is no PR, and any stop or open item.
+Give the playbook's reply parts in order, written per Writing. Then the review, with the findings you fixed, and each dismissed finding with its reason. Then name each principle that changed a decision and the choice it changed. Name anything you could not verify, and why. End with the PR link, or the branch and commit when there is no PR, and any stop or open item.
