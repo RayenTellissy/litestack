@@ -24,6 +24,8 @@ Each principle names when it applies and what it asks. Apply every one whose tri
 
 **Migrate, then delete.** A new internal API or name while old callers exist. Move every caller and delete the old path in the same change. No compatibility shims, no old and new paths side by side, no re-export under the old name.
 
+**Build the lever.** The same edit or check in more than a few places. Write the smallest script, codemod, or one-pass `sed` that does it, run it once, and check the result with `git diff`. Name the script in the review brief, so the reviewer can read how the edit was made. Never build a framework for it.
+
 **Encode lessons in structure.** About to write a comment or a rule such as "call X before Y". Prefer a type, an assertion, a test, or a lint rule that makes the wrong thing fail.
 
 ## Proof

@@ -1,6 +1,6 @@
 # litestack
 
-A fast, verified workflow for small features, bug fixes, refactors, and chores. Each task runs through a playbook and a fixed set of engineering principles in one session. There are no delegates, swarms, or multi-model review panels. What stays is the part that catches mistakes. Every change gets a pin before the first edit, verification on the real surface, and one independent review before it ships.
+A fast, verified workflow for small features, bug fixes, refactors, and chores. Each task runs through a playbook and a fixed set of engineering principles in one session. There are no code-writing delegates, swarms, or multi-model review panels. What stays is the part that catches mistakes. Every change gets a pin before the first edit, verification on the real surface, and one independent review before it ships.
 
 ## Install
 
@@ -41,6 +41,15 @@ Every playbook ends the same way.
 2. **Review.** One read-only `litestack-reviewer` on a different model from the session's. It reruns the fast checks, opens the evidence, and reviews the diff against the principles and the usual small-change traps. The session triages each finding, fixes what is real, and verifies again.
 3. **Ship.** Small ordered commits in Conventional Commits form, and a ready PR with Why, What changed, Scope, Risk, and Verification sections.
 4. **Reply.** What changed for the user, the pasted proof, the review outcome, the principles that shaped decisions, and the PR link.
+
+## Speed
+
+Litestack is fast because it never waits and never does work twice. It does not skip proof. It batches independent reads and commands into one message, starts dev servers and long suites in the background, and runs only the pin and the touched test file while editing. The full checks wait for verify. Repeated edits become one script. The review runs while the session drafts the commit, the PR, and the reply. Reversible calls get made, not asked about, and nothing waits on CI after the PR opens.
+
+Two settings help on your side.
+
+- Turn on fast mode (`/fast`) for the session.
+- Allow your project's test, lint, and type-check commands in your permission settings, so prompts do not stall a run.
 
 ## Gate
 

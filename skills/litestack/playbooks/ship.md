@@ -1,6 +1,6 @@
 # Ship
 
-**Commits.** Commit each verified unit as you go, so the history tells the story in order: the subtraction, then the reshape, then the behavior, or the failing test, then the fix. Each commit except a failing-test commit passes the checks. Fold a review fix into the commit it belongs to. Amend when that is the last commit. Otherwise run `git commit --fixup <sha>`, then `GIT_SEQUENCE_EDITOR=true git rebase -i --autosquash <base>`. A commit body says why, never what the diff already shows. Skip the body when the title says it all.
+**Commits.** Commit each verified unit as you go, so the history tells the story in order: the subtraction, then the reshape, then the behavior, or the failing test, then the fix. Each commit except a failing-test commit passes the pin, the touched test file, and the type check. Fold a review fix into the commit it belongs to. Amend when that is the last commit. Otherwise run `git commit --fixup <sha>`, then `GIT_SEQUENCE_EDITOR=true git rebase -i --autosquash <base>`. A commit body says why, never what the diff already shows. Skip the body when the title says it all.
 
 **Titles.** Use Conventional Commits, `type(scope): subject`. The type is `feat`, `fix`, `refactor`, `test`, `docs`, `perf`, or `chore`. The scope is the area. The subject is short and imperative, has no trailing period, and names the real symbol when one carries the change, as in `fix(slug): collapse separator runs in slugify`.
 

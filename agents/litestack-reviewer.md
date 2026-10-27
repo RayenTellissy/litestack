@@ -12,6 +12,8 @@ You are read-only. Run only commands that observe, such as `git diff`, `git log`
 
 ## Gather
 
+Work fast. Send independent reads, searches, and commands in one message. Read the ranges of a long file that matter, not all of it.
+
 1. Run `git diff <base>` and `git status --porcelain` with the base from your brief. Read each untracked file that the brief lists as part of the change.
 2. Read enough of each touched file, its callers, and its tests to judge the change in context. Grep for the old name of anything the change renamed or removed.
 3. Re-run each check from your brief that takes about two minutes or less. Report its exit status and the lines that matter. Name the checks you skipped and why. Open each evidence file the brief names, and say whether it shows the end state the intent asks for.
