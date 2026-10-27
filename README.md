@@ -29,7 +29,7 @@ The run has seven steps.
 1. **Size it.** Read the code and check the gate. Litestack takes a change inside one module, at most about 5 files and 200 lines. It refuses public API, schema, and persisted-format changes, as well as concurrency, auth, security, payments, migrations, and data deletion. A bug qualifies only when its cause is clear once you reproduce it.
 2. **Pin it.** Before any edit, write the check that proves the result. That is a failing repro for a bug, a green test for a refactor, and a failing test or exact observation for a tweak.
 3. **Make the change.** On a fresh branch, in the main session, with no delegates. The smallest change that passes the pin.
-4. **Verify.** Re-run the pin, the type check, lint, and the touched tests. Drive the real surface for UI and CLI changes. Paste the output.
+4. **Verify.** Re-run the pin, the type check, lint, and the touched tests. Drive the real surface for UI and CLI changes, through the project's `verify-*` skill when it has one. Paste the output.
 5. **Review.** One read-only `litestack-reviewer` on a different model from the session's. It re-runs the fast checks and reviews the diff for correctness, root cause, pin quality, missed call sites, scope, simplicity, comments, and security. The session triages each finding, fixes what is real, and verifies again.
 6. **Ship.** A Conventional Commits commit and a ready PR with Why, What changed, and Verification sections.
 7. **Reply.** What changed, the pasted proof, the review outcome, and the PR link.

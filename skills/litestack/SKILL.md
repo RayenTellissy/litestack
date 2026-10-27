@@ -34,13 +34,13 @@ To stop, name the Gate line or tripwire that fired, and what the task needs that
 Open a task list whose first items are these steps, copied verbatim. A step you skip stays in the list with `skip: <reason>`.
 
 1. **Size it.** Read the code the task touches yourself. Name the files you expect to change and the data shape involved. Check the Gate. If it fails, Stop.
-2. **Pin it.** Before any edit, write the check that proves the result. Run it and keep its output.
-   - Bug fix. Reproduce on the surface where the bug shows, or with a failing test that drives the same path. A test that passes before the fix does not pin the bug.
+2. **Pin it.** Before any edit, write the check that proves the result. Run it and keep its output. If the project has a verification skill at `.claude/skills/verify-*/SKILL.md`, read it and the file in its `features/` folder that covers the touched feature. Drive every surface pin and check through it.
+   - Bug fix. Reproduce on the surface where the bug shows, through the verification skill when there is one, or with a failing test that drives the same path. A test that passes before the fix does not pin the bug.
    - Refactor. Run the existing tests that cover the code you will move and confirm they pass. If none cover it, write a small characterization test first. Type check and lint are not a pin.
    - Feature or tweak. Write a test, or name the exact command or surface observation that fails now and must pass after.
    - Docs, config, or copy. The pin is the build, render, or load that consumes the file.
 3. **Make the change.** Work on a fresh branch off the base branch. If the tree has unrelated changes, use a new worktree. Make the edits yourself in this session. Ship the smallest change that passes the pin, and delete before you add (dead code, one-caller wrappers, stale references). For a rename or API reshape inside the Gate, migrate every caller and delete the old name in the same change, then grep for the old name in strings, docs, and config. Add a comment only for a non-obvious why the code cannot show. Match the naming and idiom of the code around it.
-4. **Verify.** Re-run the pin. A bug or feature pin now passes. A refactor pin stays green. Then run the project's type check, lint, and tests for the touched area. For a UI, CLI, or TUI change, drive the real surface. Use a browser tool for web and Electron, Bash for a CLI, and `expect` or `script` for a TUI. Keep the output verbatim. An inconclusive or wrong-surface result is a fail. Fix it or Stop.
+4. **Verify.** Re-run the pin. A bug or feature pin now passes. A refactor pin stays green. Then run the project's type check, lint, and tests for the touched area. For a UI, CLI, or TUI change, drive the real surface. With a verification skill, follow its launch, drive, evidence, and cleanup steps, and cover every entry point its feature file lists for the changed behavior. If a step of that skill breaks for a reason unrelated to the change, drive the surface directly and report the broken step. Without one, use a browser tool for web and Electron, Bash for a CLI, and `expect` or `script` for a TUI. Keep the output verbatim. An inconclusive or wrong-surface result is a fail. Fix it or Stop.
 5. **Review.** Spawn one fresh reviewer per **Review** below. Triage each finding as Act on or Dismissed, with a one-line reason. Fix every Act on, then re-run step 4. If the fixes changed logic beyond the lines the findings named, run one more review with a new reviewer. Stop on any design-level finding, or on an Act on that survives the second round.
 6. **Ship.** Commit and open the PR per **Ship** below.
 7. **Reply.** Per **Reply** below.
@@ -57,7 +57,7 @@ The brief holds three parts. Give pointers, not conclusions.
 
 - Intent. One paragraph on what the change must do and what it must leave unchanged, from the user's request. For a bug, the symptom and the repro.
 - Base. The base ref to diff against, and the untracked files that belong to the change.
-- Checks. The exact pin and step 4 commands, with roughly how long each took.
+- Checks. The exact pin and step 4 commands, with roughly how long each took, and the path of each piece of evidence the verification skill saved.
 
 Leave out your diagnosis, your design rationale, and what you already checked. They anchor the reviewer.
 
