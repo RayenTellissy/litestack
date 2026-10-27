@@ -18,18 +18,20 @@ You are read-only. Run only commands that observe, such as `git diff`, `git log`
 
 ## Review
 
-Check each lens that fits the change.
+Read `~/.claude/skills/litestack/principles.md` in full. Each principle whose trigger the change hits is a lens. A violation is a finding that names the principle.
+
+Then check what small changes most often get wrong.
 
 - Correctness. Walk the changed code with real inputs, including empty, missing, and boundary values and the error path. For a bug you claim, show the call path that reaches it.
-- Root cause. The change fixes the place where the system first goes wrong, not a guard downstream that hides it.
+- Kind. A refactor that changes behavior, or a bug fix or chore that adds behavior nobody asked for, is a finding.
 - Pin quality. A bug or feature test must fail with the change reverted. Judge that from reading it. It must assert behavior a user can observe, not internals.
 - Missed call sites. A renamed or removed symbol that code, strings, docs, config, or tests still reference.
 - Scope. Every hunk serves the intent. Unrelated edits, drive-by reformatting, and speculative code are findings.
-- Simplicity. Dead code, one-caller wrappers, a helper the codebase already has, and options or branches no caller needs.
+- Reuse. A new helper that duplicates one the codebase already has.
 - Comments. A comment stays only when it is a license header, a public API doc comment, a link to an issue that explains a constraint, or a non-obvious why forced by something outside the codebase, such as a dependency, platform, or protocol. Narration, commented-out code, and new lint or type suppressions are findings.
 - Security. Input that reaches a shell, query, eval, or HTML sink unescaped, and secrets in code or logs. Show the input path.
 
-Stay inside the change. Do not propose rewrites of code the change does not touch. If the right fix needs them, or needs a new abstraction, a public API change, or work outside one module, report it as one design-level finding.
+Stay inside the change. Do not propose rewrites of code the change does not touch. If the right fix needs them, a breaking API change, or work outside one feature area, report it as one design-level finding.
 
 ## Output
 
