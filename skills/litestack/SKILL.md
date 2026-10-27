@@ -12,7 +12,7 @@ The files named here live next to this one, in `~/.claude/skills/litestack/`. Re
 
 ## Start
 
-1. In one batch of parallel tool calls, read `principles.md`, the playbook that matches the task, and `playbooks/ship.md` in full, and run `git status` and the first searches for the code the task touches. Commits happen as you go, so Ship is needed from the start.
+1. In one batch of parallel tool calls, read `principles.md`, the playbook that matches the task, and `playbooks/ship.md` in full, plus `design.md` for Feature or Refactor, and run `git status` and the first searches for the code the task touches. Commits happen as you go, so Ship is needed from the start.
 2. If the code shows the task belongs to another playbook, read that one and switch.
 3. Open a task list whose first items are that playbook's steps, copied verbatim. A step you skip stays in the list with `skip: <reason>`.
 4. Before the first edit, start a fresh branch off the base branch, named `<type>/<short-topic>`. If the tree has unrelated changes, use a new worktree.
@@ -36,12 +36,12 @@ Litestack fits only when every line holds. Judge it against the code you read in
 - A change to a public API, schema, persisted format, or wire protocol is additive and backward compatible. Nothing needs a data migration or a version bump, or changes what existing callers get.
 - No concurrency, auth, permissions, security, payments, or data deletion on the changed path.
 - For a bug, the code and the repro point at a mechanism you can confirm. The hunt gets about three passes, then you Stop.
-- One shape is clearly right, or a quick sketch settles it.
+- For a change that needs the design step, one shape already looks clearly better from reading the code, or a quick probe can settle the fork.
 
 ## Rules
 
 - Any code. Name the data shape first, and pick its structure per Model the domain.
-- A "which approach" question. If running something can answer it (behavior, output, layout, timing), sketch it and let the result decide. For a product or preference call, take the option closest to existing behavior, act on it, and report it as an open decision. Ask first only when nothing existing suggests a default and a wrong guess would be costly to undo.
+- A "which approach" question. If running something can answer it (behavior, output, layout, timing), write a quick probe and let the result decide. For a product or preference call, take the option closest to existing behavior, act on it, and report it as an open decision. Ask first only when nothing existing suggests a default and a wrong guess would be costly to undo.
 - A UI, CLI, or TUI change. Drive the real surface. If the project has a verification skill at `.claude/skills/verify-*/SKILL.md`, read it and the file in its `features/` folder for the touched feature. Follow its launch, drive, evidence, and cleanup steps, and cover every entry point the feature file lists. If one of its steps breaks for a reason unrelated to the change, drive the surface directly and report the broken step. Without one, use a browser tool for web and Electron, Bash for a CLI, and `expect` or `script` for a TUI.
 - Every check. Keep its output verbatim. An inconclusive or wrong-surface result is a fail. Fix it or Stop.
 - A tool or skill that breaks mid-task. Say so. Never work around it silently.
@@ -67,11 +67,12 @@ Stop when the Gate fails, or when one of these fires.
 
 - The diff outgrows the Gate's size.
 - A fix attempt fails, and the next one would rest on the same premise.
-- A fork that no quick sketch settles.
+- A design fork that neither the red-flag screen nor a probe settles.
+- The build fights the sketch for a second round.
 - The review raises a design-level finding.
 - Verification cannot reach the real surface.
 
-To stop, name the Gate line or tripwire that fired, and what the task needs that litestack does not do, such as a longer root-cause hunt, a design tradeoff no sketch settles, or a migration plan. Hand over the pin, the repro output, and what you learned. Leave the branch as it is, and list its commits and any uncommitted edits.
+To stop, name the Gate line or tripwire that fired, and what the task needs that litestack does not do, such as a longer root-cause hunt, a design tradeoff no probe settles, or a migration plan. Hand over the pin, the repro output, and what you learned. Leave the branch as it is, and list its commits and any uncommitted edits.
 
 ## Review
 

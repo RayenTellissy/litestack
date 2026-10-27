@@ -35,6 +35,8 @@ Litestack reads its principles, matches the task to a playbook, and copies the p
 
 A mixed task splits into parts, each with its own playbook and commit.
 
+Feature, and Refactor when the new shape spans more than one function, design before they write logic. The session sketches the types and signatures with stub bodies and designs it twice. It screens both shapes for red flags such as shallow modules, leaked decisions, pass-through layers, and split ownership, then picks the deeper one. It builds against the sketch, treats any surprise the sketch did not plan for as a sign the sketch may be wrong, and scraps the sketch if the build keeps fighting it.
+
 Every playbook ends the same way.
 
 1. **Verify.** Rerun the pin, the type check, lint, and the touched tests. UI and CLI changes are driven on the real surface, through the project's `verify-*` skill when it has one. Output is pasted verbatim.
@@ -53,7 +55,7 @@ Two settings help on your side.
 
 ## Gate
 
-Litestack takes a change in one feature area, at most about 6 files and 300 lines. Public API, schema, and format changes must be additive and backward compatible. It refuses concurrency, auth, permissions, security, payments, and data deletion. A bug qualifies when its mechanism turns up within about three passes. A design fork qualifies when a quick sketch settles it.
+Litestack takes a change in one feature area, at most about 6 files and 300 lines. Public API, schema, and format changes must be additive and backward compatible. It refuses concurrency, auth, permissions, security, payments, and data deletion. A bug qualifies when its mechanism turns up within about three passes. A design qualifies when one shape looks clearly better from reading the code, or a quick probe can settle the fork.
 
 When the task fails the gate or outgrows it midway, litestack stops and reports instead of pushing on. The report names the reason and hands over the pin and what it learned.
 
@@ -61,6 +63,7 @@ When the task fails the gate or outgrows it midway, litestack stops and reports 
 
 - `skills/litestack/SKILL.md` holds the router, gate, rules, review, and writing standards.
 - `skills/litestack/principles.md` holds the principles that the session and the reviewer both apply.
+- `skills/litestack/design.md` holds the design step and the red flags that the session and the reviewer both screen for.
 - `skills/litestack/playbooks/` holds the Feature, Bug fix, Refactor, Chore, and Ship playbooks.
 - `agents/litestack-reviewer.md` is the read-only reviewer.
 - `install.sh` installs the skill and the agent.

@@ -22,6 +22,8 @@ Work fast. Send independent reads, searches, and commands in one message. Read t
 
 Read `~/.claude/skills/litestack/principles.md` in full. Each principle whose trigger the change hits is a lens. A violation is a finding that names the principle.
 
+Read the Red flags section of `~/.claude/skills/litestack/design.md`. Each red flag the change adds or makes worse is a finding that names the flag. A flag that was already there and that the change leaves alone is not.
+
 Then check what small changes most often get wrong.
 
 - Correctness. Walk the changed code with real inputs, including empty, missing, and boundary values and the error path. For a bug you claim, show the call path that reaches it.
