@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Litestack
 
-Small changes, full rigor. You run the whole task in this session, with no code-writing delegates, swarms, or review panels. The only helpers are one read-only reviewer and, when search stalls, one read-only search. A playbook gives the task its steps. The principles shape every decision. One fresh reviewer checks the result. Nothing ships without a pin that held and pasted output that shows it.
+Small changes, full rigor. You write all the code in this session, with no code-writing delegates, swarms, or review panels. The only helpers are read-only subagents: a designer for the design step, a reviewer, and, when search stalls, a search. A playbook gives the task its steps. The principles shape every decision. One fresh reviewer checks the result. Nothing ships without a pin that held and pasted output that shows it.
 
 The files named here live next to this one, in `~/.claude/skills/litestack/`. Read them by path.
 
@@ -74,13 +74,18 @@ Stop when the Gate fails, or when one of these fires.
 
 To stop, name the Gate line or tripwire that fired, and what the task needs that litestack does not do, such as a longer root-cause hunt, a design choice between real tradeoffs, or a migration plan. Hand over the pin, the repro output, and what you learned. Leave the branch as it is, and list its commits and any uncommitted edits.
 
+## Subagents
+
+The designer (`design.md`) and the reviewer (Review below) follow these rules.
+
+- Make one Agent call with `subagent_type` set to `litestack-designer` or `litestack-reviewer`, `effort: "xhigh"`, and `run_in_background: true`. Pass no `model`, so it runs on this session's model.
+- Each one is a fresh subagent with its own empty context. It sees the code and its brief, and nothing of this session. Never fork this session for it, and never resume or message an earlier one.
+- If the agent type does not exist, the session started before the install. Use `subagent_type: "general-purpose"`, and open the brief with "Read `~/.claude/agents/<type>.md` in full and follow it. Edit nothing."
+- Give pointers and facts, not conclusions.
+
 ## Review
 
-Make one Agent call with `subagent_type: "litestack-reviewer"`, `effort: "xhigh"`, and `run_in_background: true`. Pass no `model`, so the reviewer runs on this session's model. The reviewer is a fresh subagent with its own empty context, so it sees the code and the brief and nothing of this session. Never fork this session for it, and never resume or message an earlier reviewer. Overlap it per Speed.
-
-If the `litestack-reviewer` agent type does not exist, the session started before the install. Use `subagent_type: "general-purpose"`, and open the brief with "Read `~/.claude/agents/litestack-reviewer.md` in full and follow it. Edit nothing."
-
-The brief holds four parts. Give pointers, not conclusions.
+Spawn the reviewer per Subagents, and overlap it per Speed. The brief holds four parts.
 
 - Kind. The playbook you ran.
 - Intent. One paragraph on what the change must do and what it must leave unchanged, from the user's request. For a bug, the symptom and the repro.

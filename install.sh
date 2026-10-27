@@ -18,6 +18,6 @@ fi
 mkdir -p "$dest/skills" "$dest/agents"
 rm -rf "$dest/skills/litestack"
 cp -R "$src/skills/litestack" "$dest/skills/"
-cp "$src/agents/litestack-reviewer.md" "$dest/agents/"
+cp "$src"/agents/litestack-*.md "$dest/agents/"
 
 echo "litestack is installed in $dest. Start a new session to load it."

@@ -2,12 +2,25 @@
 
 Feature runs this before it writes logic. Refactor runs it when the target shape spans more than one function. Skip it when the change stays inside one function body, and say so. A sketch is the interface and a few lines of pseudocode, so keep it short.
 
+## Run it
+
+Steps 1 and 2 run in a `litestack-designer` subagent, spawned per the Subagents rules in `SKILL.md`. While it runs, do only work that touches no code the designer reads, such as writing the Feature acceptance check in a new test file. A Refactor waits for the sketch. The brief holds these parts.
+
+- Kind. Feature or Refactor.
+- Intent. What the change must do and what it must leave unchanged, from the user's request.
+- Shape. For a Feature, the data shape named in step 2. For a Refactor, the contract from step 1 and the target shape from step 3.
+- Entry points. For a Feature, each way in that the acceptance check will drive, such as a command, a route, or a public function, so the sketch keeps them.
+- Code. The files and symbols you read, and the closest existing code that does something similar.
+- For a second sketch, what made the build fight the first one.
+
+If the designer returns Stop, Stop. Otherwise its sketch is the contract for steps 3 and 4, which run in this session.
+
 ## Steps
 
-1. Sketch first. In a scratch file outside the repository, write the types, signatures, and module layout the change needs. Give every body a stub that fails when called, such as `throw new Error("not implemented")`, with pseudocode for the logic. Write no real logic yet. Aim for the smallest interface that hides the most.
-2. Screen the sketch against the Red flags below, and revise it until none apply, except a flag whose own text says it stays. If a revision cannot clear a flag, Stop, because no shape is clearly right.
-3. Build against the sketch. For a Feature, bring the sketch into the repository and replace each stub with code. For a Refactor, the sketch is the target. Move the existing code toward it in pin-green steps, and never replace a live body with a stub. The sketch is the contract. When the code needs something the sketch did not plan, such as a new parameter, a second writer of some state, or a special case, stop. Decide whether the sketch was wrong, a requirement was missed, or the code is overreaching, and fix that one.
-4. Scrap it when it is wrong. If the build keeps fighting the sketch, discard the sketch and drop the code and commits built on it, keeping the pin and the acceptance check. Sketch again with what you learned. Never bolt fixes onto a wrong shape. If the build fights the second sketch too, Stop, because the design is not small.
+1. Sketch first. Write the types, signatures, and module layout the change needs, as code blocks headed with the repository path each belongs in. Give every body a stub that fails when called, such as `throw new Error("not implemented")`, with pseudocode for the logic. Write no real logic yet. Aim for the smallest interface that hides the most.
+2. Screen the sketch against the Red flags below, and revise it until none apply, except a flag whose own text says it stays. If no shape is clearly right from the code, return Stop. A flag that no revision clears means no shape is clearly right.
+3. Build against the sketch. For a Feature, write the sketch into the repository and replace each stub with code. For a Refactor, the sketch is the target. Move the existing code toward it in pin-green steps, and never replace a live body with a stub. The sketch is the contract. When the code needs something the sketch did not plan, such as a new parameter, a second writer of some state, or a special case, stop. Decide whether the sketch was wrong, a requirement was missed, or the code is overreaching, and fix that one.
+4. Scrap it when it is wrong. If the build keeps fighting the sketch, discard the sketch and drop the code and commits built on it, keeping the pin and the acceptance check. Spawn a new designer whose brief says what fought the first sketch. Never bolt fixes onto a wrong shape. If the build fights the second sketch too, Stop, because the design is not small.
 
 ## Red flags
 

@@ -16,7 +16,7 @@ From GitHub:
 curl -fsSL https://raw.githubusercontent.com/RayenTellissy/litestack/main/install.sh | sh
 ```
 
-The script copies the `litestack` skill into `~/.claude/skills/` and the `litestack-reviewer` agent into `~/.claude/agents/`. Run it again to update. Start a new session after you install so the agent loads.
+The script copies the `litestack` skill into `~/.claude/skills/` and the `litestack-designer` and `litestack-reviewer` agents into `~/.claude/agents/`. Run it again to update. Start a new session after you install so the agents load.
 
 ## Use
 
@@ -35,7 +35,7 @@ Litestack reads its principles, matches the task to a playbook, and copies the p
 
 A mixed task splits into parts, each with its own playbook and commit.
 
-Feature, and Refactor when the new shape spans more than one function, design before they write logic. The session sketches the types and signatures with stub bodies, and revises the sketch until it is free of red flags such as shallow modules, leaked decisions, pass-through layers, and split ownership. It builds against the sketch, treats any surprise the sketch did not plan for as a sign the sketch may be wrong, and scraps the sketch if the build keeps fighting it.
+Feature, and Refactor when the new shape spans more than one function, design before they write logic. A read-only `litestack-designer` in a fresh subagent, on the session's model at `xhigh` effort, sketches the types and signatures with stub bodies. It revises the sketch until it is free of red flags such as shallow modules, leaked decisions, pass-through layers, and split ownership. While it works, the session writes the acceptance check. The session then builds against the sketch, treats any surprise the sketch did not plan for as a sign the sketch may be wrong, and scraps the sketch if the build keeps fighting it.
 
 Every playbook ends the same way.
 
@@ -62,11 +62,12 @@ When the task fails the gate or outgrows it midway, litestack stops and reports 
 ## Files
 
 - `skills/litestack/SKILL.md` holds the router, gate, rules, review, and writing standards.
-- `skills/litestack/principles.md` holds the principles that the session and the reviewer both apply.
-- `skills/litestack/design.md` holds the design step and the red flags that the session and the reviewer both screen for.
+- `skills/litestack/principles.md` holds the principles that the session, the designer, and the reviewer all apply.
+- `skills/litestack/design.md` holds the design step and the red flags that the designer and the reviewer both screen for.
 - `skills/litestack/playbooks/` holds the Feature, Bug fix, Refactor, Chore, and Ship playbooks.
+- `agents/litestack-designer.md` is the read-only designer.
 - `agents/litestack-reviewer.md` is the read-only reviewer.
-- `install.sh` installs the skill and the agent.
+- `install.sh` installs the skill and both agents.
 
 ## License
 
