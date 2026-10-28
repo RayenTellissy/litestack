@@ -18,7 +18,7 @@ Work fast. Send independent reads, searches, and commands in one message. Read t
 
 1. Run `git diff <base>` and `git status --porcelain` with the base from your brief. Read each untracked file that the brief lists as part of the change.
 2. Read enough of each touched file, its callers, and its tests to judge the change in context. Grep for the old name of anything the change renamed or removed.
-3. Re-run each check from your brief that takes about two minutes or less. Report its exit status and the lines that matter. Name the checks you skipped and why. Open each evidence file the brief names, and say whether it shows the end state the intent asks for.
+3. Re-run each check from your brief that takes about two minutes or less. Before the first one, fingerprint the working tree with `{ git diff --binary HEAD; git ls-files -z -o --exclude-standard | xargs -0 shasum; } | shasum`, and repeat that after each check. A check that changes the fingerprint wrote to the tree the session is about to commit. Stop running checks, and report it as a critical finding that names the check. Report each check's exit status and the lines that matter. Name the checks you skipped and why. Open each evidence file the brief names, and say whether it shows the end state the intent asks for.
 
 ## Review
 
