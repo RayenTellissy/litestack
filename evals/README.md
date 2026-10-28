@@ -66,7 +66,7 @@ This mode is close to real use but not identical. The skill is read from a brief
 ## What one run does
 
 1. Copies the case's `repo/` to a temp dir, runs `git init`, and commits it as the base. The repo has no remote, so litestack stops at the commit and opens no PR.
-2. Installs `skills/litestack/` and `agents/litestack-*.md` from the working tree into the copy's `.claude/`, which `.git/info/exclude` hides from git. The prompts name `~/.claude/` paths, so the installed copy points those at itself. `--setting-sources project,local` hides your global litestack install, your user settings, and your plugins.
+2. Installs `skills/litestack/` and `agents/litestack-*.md` from the working tree into the copy's `.claude/`, which `.git/info/exclude` hides from git. The prompts find their own files through `${CLAUDE_SKILL_DIR}`, and versions before the plugin through `~/.claude/`. The installed copy replaces both with its own folder, because a helper agent reads `SKILL.md` as a plain file with nothing substituted. `--setting-sources project,local` hides your global litestack install, your user settings, and your plugins.
 3. Runs `claude -p "/litestack <task>"` with `--output-format stream-json`, `--no-session-persistence`, and an environment stripped to PATH, HOME, locale, and auth variables. The transcript is saved next to the result.
 4. Grades the worktree that is furthest ahead of the base, so a run that branches or adds a worktree is still found.
 
@@ -116,8 +116,7 @@ The CLI-mode baseline is not recorded yet. The CLI login on this machine hit its
 The installed CLI has it, and it does not fit litestack.
 
 - Its graders run no code, so they cannot run hidden tests or read git history.
-- Each run gets a temp HOME and an empty workspace. Litestack's prompts read `~/.claude/skills/litestack/`, which would be empty there.
-- It loads the repo as a plugin, which renames the agent types litestack spawns.
+- Each run gets an empty workspace, so the fixture repo and its base commit would have to come from a scaffold script.
 - Its JSON has no per-run wall time or tokens.
 
 ## Adding a case

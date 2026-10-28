@@ -92,14 +92,16 @@ def setup(case, repo):
 
 def install(repo):
     # A project-level copy plus --setting-sources project,local hides any global install.
-    # The prompts name ~/.claude/ paths, so the copy points them at itself.
+    # The prompts find their files through ${CLAUDE_SKILL_DIR}, and older ones through ~/.claude/.
+    # A helper agent reads SKILL.md raw with nothing substituted, so the copy names its own folder.
     dot = repo / ".claude"
     shutil.copytree(ROOT / "skills" / "litestack", dot / "skills" / "litestack")
     (dot / "agents").mkdir()
     for f in (ROOT / "agents").glob("litestack-*.md"):
         shutil.copy(f, dot / "agents" / f.name)
     for f in dot.rglob("*.md"):
-        f.write_text(f.read_text().replace("~/.claude/", f"{dot}/"))
+        text = f.read_text().replace("${CLAUDE_SKILL_DIR}", str(dot / "skills" / "litestack"))
+        f.write_text(text.replace("~/.claude/", f"{dot}/"))
     with open(repo / ".git" / "info" / "exclude", "a") as fh:
         fh.write(".claude/\n")
 
@@ -558,7 +560,8 @@ def cmd_selftest(opts):
                 repo = Path(tmp) / f"{case['name']}-{i}" / "repo"
                 base = setup(case, repo)
                 installed = (repo / ".claude" / "skills" / "litestack" / "SKILL.md").read_text()
-                assert "~/.claude/" not in installed and str(repo / ".claude") in installed, "install rewrite failed"
+                assert ("~/.claude/" not in installed and "${CLAUDE_SKILL_DIR}" not in installed
+                        and str(repo / ".claude" / "skills" / "litestack") in installed), "install rewrite failed"
                 if change == "reference":
                     ref = case["dir"] / "reference"
                     for wanted in (True, False):
