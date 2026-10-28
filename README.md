@@ -24,6 +24,12 @@ From GitHub:
 curl -fsSL https://raw.githubusercontent.com/RayenTellissy/litestack/main/install.sh | sh
 ```
 
+That installs `main`. To install a branch, tag, or commit instead, set `LITESTACK_REF`. To install from a fork, set `LITESTACK_REPO` to its `owner/name`.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/RayenTellissy/litestack/main/install.sh | LITESTACK_REF=<ref> sh
+```
+
 The script copies the `litestack` skill into `skills/` and the `litestack-designer` and `litestack-reviewer` agents into `agents/`, under `$CLAUDE_CONFIG_DIR` or `~/.claude` when that is unset. Run it again to update. Start a new session after you install so the agents load.
 
 Use one method. With both, each agent and the skill load twice.
