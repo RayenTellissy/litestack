@@ -4,7 +4,15 @@ A fast, verified workflow for small features, bug fixes, refactors, and chores. 
 
 ## Install
 
-From a clone:
+As a plugin, from inside a session:
+
+```
+/plugin install litestack --marketplace RayenTellissy/litestack
+```
+
+`/plugin` updates it from then on. A plugin's skill is named after the plugin, so the command is `/litestack:litestack`.
+
+Or with the script, from a clone:
 
 ```bash
 ./install.sh
@@ -17,6 +25,8 @@ curl -fsSL https://raw.githubusercontent.com/RayenTellissy/litestack/main/instal
 ```
 
 The script copies the `litestack` skill into `skills/` and the `litestack-designer` and `litestack-reviewer` agents into `agents/`, under `$CLAUDE_CONFIG_DIR` or `~/.claude` when that is unset. Run it again to update. Start a new session after you install so the agents load.
+
+Use one method. With both, each agent and the skill load twice.
 
 ## Use
 
@@ -67,7 +77,8 @@ When the task fails the gate or outgrows it midway, litestack stops and reports 
 - `skills/litestack/playbooks/` holds the Feature, Bug fix, Refactor, Chore, and Ship playbooks.
 - `agents/litestack-designer.md` is the read-only designer.
 - `agents/litestack-reviewer.md` is the read-only reviewer.
-- `install.sh` installs the skill and both agents.
+- `.claude-plugin/` holds the plugin and marketplace manifests.
+- `install.sh` installs the skill and both agents without the plugin system.
 
 ## License
 

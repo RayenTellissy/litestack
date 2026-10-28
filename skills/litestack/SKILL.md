@@ -1,6 +1,6 @@
 ---
 name: litestack
-description: A fast, verified workflow for small features, bug fixes, refactors, and chores. Routes the task to a playbook, applies a fixed set of engineering principles, pins behavior before any edit, makes the change in the main session, verifies on the real surface, gets one independent review, and ships a clean commit and PR. Stops and reports when the task is too big for it. Use for /litestack.
+description: A fast, verified workflow for small features, bug fixes, refactors, and chores. Routes the task to a playbook, applies a fixed set of engineering principles, pins behavior before any edit, makes the change in the main session, verifies on the real surface, gets one independent review, and ships a clean commit and PR. Stops and reports when the task is too big for it. Use for /litestack, or /litestack:litestack from the plugin.
 disable-model-invocation: true
 ---
 
@@ -78,7 +78,7 @@ To stop, name the Gate line or tripwire that fired, and what the task needs that
 
 The designer (`design.md`) and the reviewer (Review below) follow these rules.
 
-- Make one Agent call with `subagent_type` set to `litestack-designer` or `litestack-reviewer`. Pass no `model` or `effort`. Each agent's definition sets `model: inherit` and `effort: xhigh`, so it runs on this session's model even when a default subagent model is configured. Run it in the background, through the tool's background option when it has one, and keep working.
+- Make one Agent call with `subagent_type` set to `litestack-designer` or `litestack-reviewer`, or `litestack:litestack-designer` or `litestack:litestack-reviewer` when the Agent tool lists them under the plugin's name. Pass no `model` or `effort`. Each agent's definition sets `model: inherit` and `effort: xhigh`, so it runs on this session's model even when a default subagent model is configured. Run it in the background, through the tool's background option when it has one, and keep working.
 - Each one is a fresh subagent with its own empty context. It sees the code and its brief, and nothing of this session. Never fork this session for it, and never resume or message an earlier one.
 - Open the brief with the absolute paths of `principles.md` and `design.md` in `${CLAUDE_SKILL_DIR}`. The agent reads them from there.
 - If the agent type does not exist, the session started before the install. Use `subagent_type: "general-purpose"` with `effort: "xhigh"` and this session's model, and open the brief with "Read `${CLAUDE_SKILL_DIR}/../../agents/<type>.md` in full and follow it. Edit nothing.", with the path written out in full.
