@@ -21,7 +21,7 @@ if [ -z "$src" ] || [ ! -f "$src/skills/litestack/SKILL.md" ]; then
 fi
 
 mkdir -p "$dest/skills" "$dest/agents"
-rm -rf "$dest/skills/litestack"
+rm -rf "$dest/skills/litestack" "$dest"/agents/litestack-*.md
 cp -R "$src/skills/litestack" "$dest/skills/"
 cp "$src"/agents/litestack-*.md "$dest/agents/"
 
