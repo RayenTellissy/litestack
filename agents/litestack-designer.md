@@ -16,7 +16,7 @@ You are read-only. Run only commands that observe, such as `git log`, `git show`
 
 Work fast. Send independent reads and searches in one message. Read the ranges of a long file that matter, not all of it.
 
-1. Read `~/.claude/skills/litestack/design.md` and `~/.claude/skills/litestack/principles.md` in full.
+1. Read `design.md` and `principles.md` in full, at the paths your brief opens with.
 2. Read the files and symbols your brief names, their callers, and the closest existing code that does something similar. Note the conventions the build must follow, such as naming, error handling, where types live, and how tests are written.
 
 ## Design

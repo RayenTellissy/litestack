@@ -16,7 +16,7 @@ From GitHub:
 curl -fsSL https://raw.githubusercontent.com/RayenTellissy/litestack/main/install.sh | sh
 ```
 
-The script copies the `litestack` skill into `~/.claude/skills/` and the `litestack-designer` and `litestack-reviewer` agents into `~/.claude/agents/`. Run it again to update. Start a new session after you install so the agents load.
+The script copies the `litestack` skill into `skills/` and the `litestack-designer` and `litestack-reviewer` agents into `agents/`, under `$CLAUDE_CONFIG_DIR` or `~/.claude` when that is unset. Run it again to update. Start a new session after you install so the agents load.
 
 ## Use
 
