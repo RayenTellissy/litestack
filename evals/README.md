@@ -18,6 +18,8 @@ Every Ship case also needs at least one commit, the visible tests green, and no 
 
 You need `claude` logged in, `python3` 3.9 or later, and `git`.
 
+Runs use the account the terminal `claude` is logged into, which can differ from the desktop app's. `claude auth status` shows it. To use another account for the eval only, run `claude setup-token` and pass the token as `CLAUDE_CODE_OAUTH_TOKEN`.
+
 Check the graders first. This makes no model calls and takes a few seconds.
 
 ```bash
