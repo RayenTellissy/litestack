@@ -1,0 +1,6 @@
+{
+  "test_cmd": "python3 -m unittest discover -s tests",
+  "kind": "bug",
+  "expect": "ship",
+  "task": "Splitting a bill loses money. `python3 -m tabsplit 100.00 alice bob carol` prints `Total: $99.99`, but the total must always match the amount entered. Fix it."
+}

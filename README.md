@@ -79,6 +79,7 @@ When the task fails the gate or outgrows it midway, litestack stops and reports 
 - `agents/litestack-reviewer.md` is the read-only reviewer.
 - `.claude-plugin/` holds the plugin and marketplace manifests.
 - `install.sh` installs the skill and both agents without the plugin system.
+- `evals/` holds the eval suite that measures a prompt change. See `evals/README.md`.
 
 ## License
 
