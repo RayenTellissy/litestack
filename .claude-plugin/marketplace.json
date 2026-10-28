@@ -1,0 +1,14 @@
+{
+  "name": "litestack",
+  "description": "The litestack workflow for small, verified changes.",
+  "owner": {
+    "name": "RayenTellissy"
+  },
+  "plugins": [
+    {
+      "name": "litestack",
+      "source": "./",
+      "description": "A fast, verified workflow for small features, bug fixes, refactors, and chores."
+    }
+  ]
+}
