@@ -8,7 +8,7 @@ disable-model-invocation: true
 
 Small changes, full rigor. You write all the code in this session, with no code-writing delegates, swarms, or review panels. The only helpers are read-only subagents: a designer for the design step, a reviewer, and, when search stalls, a search. A playbook gives the task its steps. The principles shape every decision. One fresh reviewer checks the result. Nothing ships without a pin that held and pasted output that shows it.
 
-The files named here live next to this one, in `~/.claude/skills/litestack/`. Read them by path.
+The files named here live next to this one, in `${CLAUDE_SKILL_DIR}`. Read them by path.
 
 ## Start
 
@@ -80,7 +80,8 @@ The designer (`design.md`) and the reviewer (Review below) follow these rules.
 
 - Make one Agent call with `subagent_type` set to `litestack-designer` or `litestack-reviewer`. Pass no `model` or `effort`. Each agent's definition sets `model: inherit` and `effort: xhigh`, so it runs on this session's model even when a default subagent model is configured. Run it in the background, through the tool's background option when it has one, and keep working.
 - Each one is a fresh subagent with its own empty context. It sees the code and its brief, and nothing of this session. Never fork this session for it, and never resume or message an earlier one.
-- If the agent type does not exist, the session started before the install. Use `subagent_type: "general-purpose"` with `effort: "xhigh"` and this session's model, and open the brief with "Read `~/.claude/agents/<type>.md` in full and follow it. Edit nothing."
+- Open the brief with the absolute paths of `principles.md` and `design.md` in `${CLAUDE_SKILL_DIR}`. The agent reads them from there.
+- If the agent type does not exist, the session started before the install. Use `subagent_type: "general-purpose"` with `effort: "xhigh"` and this session's model, and open the brief with "Read `${CLAUDE_SKILL_DIR}/../../agents/<type>.md` in full and follow it. Edit nothing.", with the path written out in full.
 - Give pointers and facts, not conclusions.
 
 ## Review

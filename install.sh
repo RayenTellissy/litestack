@@ -1,10 +1,10 @@
 #!/bin/sh
-# Installs litestack into ~/.claude, or updates it.
+# Installs litestack into $CLAUDE_CONFIG_DIR, default ~/.claude, or updates it.
 # From a clone: ./install.sh
 # From GitHub: curl -fsSL https://raw.githubusercontent.com/RayenTellissy/litestack/main/install.sh | sh
 set -eu
 
-dest="$HOME/.claude"
+dest="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
 src=$(cd "$(dirname "$0")" && pwd)
 
 if [ ! -f "$src/skills/litestack/SKILL.md" ]; then

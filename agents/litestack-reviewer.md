@@ -22,9 +22,9 @@ Work fast. Send independent reads, searches, and commands in one message. Read t
 
 ## Review
 
-Read `~/.claude/skills/litestack/principles.md` in full. Each principle whose trigger the change hits is a lens. A violation is a finding that names the principle.
+Read `principles.md` in full, at the path your brief opens with. Each principle whose trigger the change hits is a lens. A violation is a finding that names the principle.
 
-Read the Red flags section of `~/.claude/skills/litestack/design.md`. Each red flag the change adds or makes worse is a finding that names the flag. A flag that was already there and that the change leaves alone is not.
+Read the Red flags section of `design.md`, at the path your brief opens with. Each red flag the change adds or makes worse is a finding that names the flag. A flag that was already there and that the change leaves alone is not.
 
 Then check what small changes most often get wrong.
 
