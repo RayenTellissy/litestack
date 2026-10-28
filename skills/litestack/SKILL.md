@@ -91,7 +91,7 @@ Spawn the reviewer per Subagents, and overlap it per Speed. The brief holds four
 - Kind. The playbook you ran.
 - Intent. One paragraph on what the change must do and what it must leave unchanged, from the user's request. For a bug, the symptom and the repro.
 - Base. The base ref to diff against, and the untracked files that belong to the change.
-- Checks. The exact pin and verify commands, with roughly how long each took, the path of each piece of evidence the verification skill saved, each comparison script and the path of its kept output, and any script that made a repeated edit.
+- Checks. The exact pin and verify commands, in a form that writes nothing to the tree, such as lint without `--fix` and snapshot tests in CI mode, with roughly how long each took, the path of each piece of evidence the verification skill saved, each comparison script and the path of its kept output, and any script that made a repeated edit.
 
 Leave out your diagnosis, your design rationale, and what you already checked. They anchor the reviewer.
 
