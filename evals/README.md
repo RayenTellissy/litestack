@@ -40,13 +40,13 @@ python3 evals/run.py compare baseline-eafa70d my-change
 
 Useful `run` options are `--case 'stop-*'` to run a subset, `--runs 5` for more samples, `--jobs 3` for more parallel runs, `--model`, `--effort`, `--timeout-min` (default 45), and `--max-budget-usd` as a per-run cap.
 
-Launch it from a plain terminal. Each run uses `--dangerously-skip-permissions` inside its throwaway copy, and Claude Code's auto mode refuses to start such a child from inside a session.
+Launch it from a plain terminal. Each run uses `--dangerously-skip-permissions` inside its throwaway copy, and auto mode refuses to start such a child from inside a session.
 
 `python3 evals/run.py grade <label>` regrades a finished run from its kept workdirs after a grader change, with no model calls.
 
-## Run it from a Claude Code session instead
+## Run it from a session instead
 
-When the terminal `claude` cannot run, a Claude Code session can drive the same cases with helper agents, on the session's own account. Helper agents can start their own helpers, so the designer and reviewer still run.
+When the terminal `claude` cannot run, a session can drive the same cases with helper agents, on the session's own account. Helper agents can start their own helpers, so the designer and reviewer still run.
 
 1. Set up the workdirs. Each printed run folder gets a `brief.md`.
 

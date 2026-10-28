@@ -27,7 +27,7 @@ CASES = EVALS / "cases"
 RESULTS = EVALS / "results"
 
 # The child gets only these from the caller's environment, so a run launched from inside
-# another Claude Code session behaves like one launched from a plain terminal.
+# another session behaves like one launched from a plain terminal.
 ENV_KEEP = {"PATH", "HOME", "USER", "LOGNAME", "SHELL", "TMPDIR", "LANG", "TERM",
             "ANTHROPIC_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN"}
 STOP_WORD = re.compile(r"\bstop(?:ped|ping|s)?\b", re.I)
@@ -391,7 +391,7 @@ Rules for this environment:
 
 
 def cmd_prepare(opts):
-    """Set up workdirs for runs that a Claude Code session drives with helper agents."""
+    """Set up workdirs for runs that a session drives with helper agents."""
     cases = load_cases(opts.case)
     out_root, work_root, _ = start_results(opts, "subagent")
     for i in range(1, opts.runs + 1):
@@ -419,7 +419,7 @@ def cmd_run(opts):
         blocked = next(r for r in records if r.get("error") and not r["error"].startswith("skipped"))
         shutil.rmtree(out_root)
         shutil.rmtree(work_root, ignore_errors=True)
-        sys.exit(f"Nothing was graded. Claude refused every run: {blocked.get('reply') or blocked['error']}\n"
+        sys.exit(f"Nothing was graded. Every run was refused: {blocked.get('reply') or blocked['error']}\n"
                  f"Removed {out_root}. Rerun the same command once that is fixed.")
     meta["finished"] = datetime.datetime.now().isoformat(timespec="seconds")
     (out_root / "meta.json").write_text(json.dumps(meta, indent=2))
