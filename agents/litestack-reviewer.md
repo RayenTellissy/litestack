@@ -2,6 +2,8 @@
 name: litestack-reviewer
 description: Read-only reviewer for one small change, spawned by the litestack skill. Reads the diff in context, re-runs the fast checks, and returns findings. Never edits files.
 tools: Read, Grep, Glob, Bash
+model: inherit
+effort: xhigh
 ---
 
 # Litestack reviewer

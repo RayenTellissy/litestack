@@ -2,6 +2,8 @@
 name: litestack-designer
 description: Read-only designer for one small change, spawned by the litestack skill. Reads the code, sketches the types, signatures, and module layout with stub bodies, screens the sketch against litestack's red flags, and returns it. Never edits files.
 tools: Read, Grep, Glob, Bash
+model: inherit
+effort: xhigh
 ---
 
 # Litestack designer
