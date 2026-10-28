@@ -40,7 +40,7 @@ Litestack fits only when every line holds. Judge it against the code you read in
 
 ## Rules
 
-- Any code. Name the data shape first, and pick its structure per Model the domain.
+- Any code. Name the data shape first, and pick its structure (Model the domain).
 - A "which approach" question. If running something can answer it (behavior, output, layout, timing), run it instead of asking. For a product or preference call, take the option closest to existing behavior, act on it, and report it as an open decision. Ask first only when nothing existing suggests a default and a wrong guess would be costly to undo.
 - A UI, CLI, or TUI change. Drive the real surface. If the project has a verification skill at `.claude/skills/verify-*/SKILL.md`, read it and the file in its `features/` folder for the touched feature. Follow its launch, drive, evidence, and cleanup steps, and cover every entry point the feature file lists. If one of its steps breaks for a reason unrelated to the change, drive the surface directly and report the broken step. Without one, use a browser tool for web and Electron, Bash for a CLI, and `expect` or `script` for a TUI.
 - Every check. Keep its output verbatim. An inconclusive or wrong-surface result is a fail. Fix it or Stop.
@@ -56,7 +56,7 @@ Speed comes from never waiting and never doing work twice, not from skipping pro
 - Locate, then read. Find code with Grep and Glob before you open files. Read the matching ranges of a long file, not all of it. If two rounds of search have not found the code, spawn one `Explore` subagent with the question.
 - Start slow things early. Launch a dev server, a build, or a long test suite in the background as soon as you know you need it, and keep working. You are notified when a build or test run ends, so never sleep to wait for one. A server never ends. Wait for it through the verification skill's launch step, or with one readiness check that has a timeout, such as a `curl` retry loop.
 - Keep the inner loop tight. While you edit, run only the pin and the touched test file, using the runner's file or name filter. Save the area's full tests and lint for verify.
-- Build the lever. A repeated edit is one scripted pass, per the principle of that name, not a run of hand edits.
+- Script repeated edits. A repeated edit is one scripted pass, not a run of hand edits (Build the lever).
 - No double work. Do not re-read a file you just edited. Do not rerun a check whose inputs have not changed. Trim long output with `tail`, `head`, or `grep`.
 - Overlap the review. Start the reviewer the moment verify passes. While it runs, draft the commit message, the PR body, and the reply.
 - Do not wait on people or bots. Decide reversible calls and report them. After the PR opens, post the URL and stop.
@@ -76,7 +76,7 @@ To stop, name the Gate line or tripwire that fired, and what the task needs that
 
 ## Subagents
 
-The designer (`design.md`) and the reviewer (Review below) follow these rules.
+The designer (`design.md`) and the reviewer (see Review below) follow these rules.
 
 - Make one Agent call with `subagent_type` set to `litestack-designer` or `litestack-reviewer`, or `litestack:litestack-designer` or `litestack:litestack-reviewer` when the Agent tool lists them under the plugin's name. Pass no `model` or `effort`. Each agent's definition sets `model: inherit` and `effort: xhigh`, so it runs on this session's model even when a default subagent model is configured. Run it in the background, through the tool's background option when it has one, and keep working.
 - Each one is a fresh subagent with its own empty context. It sees the code and its brief, and nothing of this session. Never fork this session for it, and never resume or message an earlier one.
@@ -117,7 +117,7 @@ This covers the reply, code comments, commit messages, and the PR. Write it clea
 - Lead with impact. Say who notices the change and what changes for them before any implementation detail. Then say what the next maintainer inherits.
 - Every claim carries its evidence or its label (measured, inferred, or guess) in the same sentence. Never hand the user a check you could run.
 - Never fabricate a link, citation, or output. Link only what you produced or read this session.
-- A code comment follows Comments say why.
+- A code comment follows its principle (Comments say why).
 
 ## Reply
 

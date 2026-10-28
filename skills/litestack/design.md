@@ -29,6 +29,6 @@ If the designer returns Stop, Stop. Otherwise its sketch is the contract for Bui
 - **Split by time, not knowledge.** Modules cut into load, validate, transform, and save stages that each relearn the same representation and its rules. Group code by what it knows and owns.
 - **Pass-through layer.** A function that forwards its arguments to another of the same shape and adds no policy or adaptation.
 - **Split ownership.** Two modules write the same state, or each keeps its own copy. Give each piece of state one owner that the others ask.
-- **Two ways to do one task.** Whichever way a reader finds first gains the next caller. Fix an internal one per Migrate, then delete. A public one stays, per the Gate, and goes in the reply as an open item.
+- **Two ways to do one task.** Whichever way a reader finds first gains the next caller. Fix an internal one by moving its callers and deleting it (Migrate, then delete). A public one stays, per the Gate, and goes in the reply as an open item.
 - **Reachable internals.** Outside code can import a module's internals, so they turn into its interface. Make them unreachable from outside.
 - **Hand-synced lists.** Adding an item means editing several lists. Derive them from one list, or make the build fail when they disagree.

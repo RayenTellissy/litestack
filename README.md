@@ -86,6 +86,7 @@ When the task fails the gate or outgrows it midway, litestack stops and reports 
 - `.claude-plugin/` holds the plugin and marketplace manifests.
 - `install.sh` installs the skill and both agents without the plugin system.
 - `evals/` holds the eval suite that measures a prompt change. See `evals/README.md`.
+- `scripts/check-principles.py` fails when a skill or agent file cites a principle that `principles.md` does not define. Cite one by its name in parentheses, as in "(Reader load)". CI runs it on every push and PR.
 
 ## License
 
