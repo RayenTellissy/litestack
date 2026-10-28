@@ -21,7 +21,7 @@ Work fast. Send independent reads and searches in one message. Read the ranges o
 
 ## Design
 
-Run steps 1 and 2 of `design.md`. Apply the principles whose triggers the change hits, Model the domain first. Keep every entry point the brief names.
+Run the Sketch and Screen steps of `design.md`. Apply the principles whose triggers the change hits, Model the domain first. Keep every entry point the brief names.
 
 For a Refactor, the sketch must delete branches, layers, or invalid states, not add indirection. Code that is already clear stays as it is.
 
@@ -53,5 +53,5 @@ Return one of these and nothing else.
 
 ````
 ## Stop
-<the step 2 reason: no shape is clearly right, or a flag that no revision clears>
+<the Screen step's reason: no shape is clearly right, or a flag that no revision clears>
 ````
