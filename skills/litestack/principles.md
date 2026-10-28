@@ -28,6 +28,8 @@ Each principle names when it applies and what it asks. Apply every one whose tri
 
 **Encode lessons in structure.** About to write a comment or a rule such as "call X before Y". Prefer a type, an assertion, a test, or a lint rule that makes the wrong thing fail.
 
+**Comments say why.** Writing, keeping, or reviewing a code comment. A comment stays only when it is a license header, a public API doc comment, a link to an issue that explains a constraint, or a non-obvious why that the code cannot show, such as a constraint from a dependency, platform, or protocol. No narration, no commented-out code, and no step comments in tests or scripts, where the assertion message documents the step. A new lint or type suppression is a defect.
+
 ## Proof
 
 **Prove it works.** Before calling anything done. Check the real artifact directly: the running app, the CLI's actual output, the file or row it wrote, the value read back from its source. "It compiles", a green type check, a cached screenshot, a log line that claims success, or a summary of a run is not proof. Evidence comes from a run after the last edit to anything the check covers. When a check fails, suspect how you observed before you suspect the system. When the proof is a comparison, script it so it reruns the same way, keep its output, and list it in the review brief's Checks so the reviewer reruns it. Say what you could not verify, and why.

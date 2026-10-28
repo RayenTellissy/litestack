@@ -117,7 +117,7 @@ This covers the reply, code comments, commit messages, and the PR. Write it clea
 - Lead with impact. Say who notices the change and what changes for them before any implementation detail. Then say what the next maintainer inherits.
 - Every claim carries its evidence or its label (measured, inferred, or guess) in the same sentence. Never hand the user a check you could run.
 - Never fabricate a link, citation, or output. Link only what you produced or read this session.
-- A comment states a non-obvious why that the code cannot show, and nothing else. No narration, no commented-out code, and no step comments in tests or scripts, where the assertion message documents the step.
+- A code comment follows Comments say why.
 
 ## Reply
 
