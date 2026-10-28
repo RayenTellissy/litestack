@@ -340,6 +340,12 @@ def cmd_run(opts):
     jobs = [(case, i) for i in range(1, opts.runs + 1) for case in cases]
     with ThreadPoolExecutor(max_workers=opts.jobs) as pool:
         records = list(pool.map(lambda job: safe_run(*job, out_root, work_root, opts, abort), jobs))
+    if abort.is_set() and not any("grade" in r and not r.get("error") for r in records):
+        blocked = next(r for r in records if r.get("error") and not r["error"].startswith("skipped"))
+        shutil.rmtree(out_root)
+        shutil.rmtree(work_root, ignore_errors=True)
+        sys.exit(f"Nothing was graded. Claude refused every run: {blocked.get('reply') or blocked['error']}\n"
+                 f"Removed {out_root}. Rerun the same command once that is fixed.")
     meta["finished"] = datetime.datetime.now().isoformat(timespec="seconds")
     (out_root / "meta.json").write_text(json.dumps(meta, indent=2))
     write_summary(out_root, records)
@@ -409,7 +415,7 @@ def write_summary(out_root, records=None):
              f"Skill {meta['skill_sha256']} at {meta['commit']}{' (dirty)' if meta['skill_dirty'] else ''}, "
              f"{meta['claude_version']}, model {meta.get('model') or 'default'}, {meta['runs_per_case']} runs per case.", "",
              f"Total pass {total['pass']}, errors {total['errors']}, cost ${total['cost_total_usd']}, "
-             f"median wall {total['wall_median_s']}s.", "",
+             f"median wall {total['wall_median_s'] if total['wall_median_s'] is not None else '-'}s.", "",
              "| " + " | ".join(cols) + " |", "|" + "---|" * len(cols)]
     lines += ["| " + " | ".join(str(row[c]) if row[c] is not None else "-" for c in cols) + " |" for row in rows]
     (out_root / "summary.md").write_text("\n".join(lines) + "\n")
