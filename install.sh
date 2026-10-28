@@ -5,9 +5,14 @@
 set -eu
 
 dest="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
-src=$(cd "$(dirname "$0")" && pwd)
 
-if [ ! -f "$src/skills/litestack/SKILL.md" ]; then
+# Piped into sh, $0 is the shell's name, and its dirname would be the working directory.
+case $0 in
+  install.sh | */install.sh) src=$(cd "$(dirname "$0")" && pwd) ;;
+  *) src= ;;
+esac
+
+if [ -z "$src" ] || [ ! -f "$src/skills/litestack/SKILL.md" ]; then
   ref="${LITESTACK_REF:-main}"
   repo="${LITESTACK_REPO:-RayenTellissy/litestack}"
   src=$(mktemp -d)
