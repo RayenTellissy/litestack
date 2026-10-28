@@ -34,7 +34,7 @@ Then check what small changes most often get wrong.
 - Missed call sites. A renamed or removed symbol that code, strings, docs, config, or tests still reference.
 - Scope. Every hunk serves the intent. Unrelated edits, drive-by reformatting, and speculative code are findings.
 - Reuse. A new helper that duplicates one the codebase already has.
-- Comments. A comment stays only when it is a license header, a public API doc comment, a link to an issue that explains a constraint, or a non-obvious why forced by something outside the codebase, such as a dependency, platform, or protocol. Narration, commented-out code, and new lint or type suppressions are findings.
+- Comments. Each comment the change adds, and each new lint or type suppression, against Comments say why.
 - Security. Input that reaches a shell, query, eval, or HTML sink unescaped, and secrets in code or logs. Show the input path.
 
 Stay inside the change. Do not propose rewrites of code the change does not touch. If the right fix needs them, a breaking API change, or work outside one feature area, report it as one design-level finding.
