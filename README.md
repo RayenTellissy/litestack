@@ -34,7 +34,7 @@ Use one method. With both, each agent and the skill load twice.
 /litestack <task>
 ```
 
-Litestack reads its principles, matches the task to a playbook, and copies the playbook's steps into a task list.
+Litestack reads its principles, matches the task to a playbook, and copies the playbook's step labels into a task list.
 
 | Playbook | For | The pin |
 |----------|-----|---------|

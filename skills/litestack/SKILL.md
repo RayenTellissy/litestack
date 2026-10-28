@@ -14,7 +14,7 @@ The files named here live next to this one, in `${CLAUDE_SKILL_DIR}`. Read them 
 
 1. In one batch of parallel tool calls, read `principles.md`, the playbook that matches the task, and `playbooks/ship.md` in full, plus `design.md` for Feature or Refactor, and run `git status` and the first searches for the code the task touches. Commits happen as you go, so Ship is needed from the start.
 2. If the code shows the task belongs to another playbook, read that one and switch.
-3. Open a task list whose first items are that playbook's steps, copied verbatim. A step you skip stays in the list with `skip: <reason>`.
+3. Open a task list whose first items are the bold labels of that playbook's steps, in order. The full text of each step still governs the work. A step you skip stays in the list with `skip: <reason>`.
 4. Before the first edit, start a fresh branch off the base branch, named `<type>/<short-topic>`. If the tree has unrelated changes, use a new worktree.
 
 ## Playbooks
