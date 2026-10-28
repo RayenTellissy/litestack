@@ -1,6 +1,15 @@
 # Design
 
-Feature runs this before it writes logic. Refactor runs it when the target shape spans more than one function. Skip it when the change stays inside one function body, and say so. A sketch is the interface and a few lines of pseudocode, so keep it short.
+Feature and Refactor run this before they write logic, and only when the change adds a shape the code does not have yet. That means any of these.
+
+- A new type, data shape, or stored field.
+- A new module, or a new or changed signature on a function that another module calls.
+- State that gets a new owner or a second writer.
+- For a Refactor, a target shape that moves code between modules.
+
+Otherwise skip it, and put the reason in the task list. For a Feature, the closest existing code that does the same kind of thing then stands in for the sketch. Name it in the skip reason, and build to match it. For a Refactor, the shape from Name the target shape stands in. A skip has a tripwire. If the build turns out to need anything on the list above, stop and run this step before you write more logic. The reviewer still screens the result against the Red flags below.
+
+A sketch is the interface and a few lines of pseudocode, so keep it short.
 
 ## Run it
 

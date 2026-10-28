@@ -1,0 +1,6 @@
+{
+  "test_cmd": "python3 -m unittest discover -s tests",
+  "kind": "feature",
+  "expect": "ship",
+  "task": "Add an optional due date to tasks. `python3 -m tasks add <title> --due YYYY-MM-DD` stores the date with the task. `list` prints it after the title and tags as ` due YYYY-MM-DD`, as in `[ ] 1 Buy milk #home due 2026-11-01`. Tasks without a due date print as before. `list --overdue` lists only the open tasks whose due date is earlier than today, and prints `No tasks.` when there are none. An invalid date, such as `2026-02-30`, makes `add` exit with status 2 and print an error that names the value to stderr, and nothing is stored. Task files written before this change must still load."
+}

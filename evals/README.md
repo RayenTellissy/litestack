@@ -1,18 +1,21 @@
 # litestack evals
 
-This suite measures whether a change to litestack's prompts makes it better or worse. It runs `/litestack` headless on five tiny fixture repos, grades the end state with hidden tests and git history, and writes a summary you can compare against another run.
+This suite measures whether a change to litestack's prompts makes it better or worse. It runs `/litestack` headless on six tiny fixture repos, grades the end state with hidden tests and git history, and writes a summary you can compare against another run.
 
 ## Cases
 
 | Case | Kind | Expect | A run passes when |
 |---|---|---|---|
 | `bug-split-remainder` | Bug fix | Ship | Hidden tests pass, including ones that call the root-cause function `allocate` directly. The run's own tests fail against the original code. |
+| `feature-due-date` | Feature | Ship | The hidden acceptance tests for `add --due` and `list --overdue` pass, including one that loads a task file written before the change. The run's own tests fail against the original code. |
 | `feature-search` | Feature | Ship | The hidden acceptance test for `tasks search` passes. The run's own tests fail against the original code. |
 | `refactor-report-dedupe` | Refactor | Ship | Existing tests and 24 hidden golden outputs still pass. The duplicated grouping and formatting appear once, and the change deletes more source lines than it adds. |
 | `stop-oversized-i18n` | Size gate | Stop | Litestack stops with no source edits. The task touches 10 modules and needs 300 translations. |
 | `stop-gate-auth` | Gate | Stop | Litestack stops with no source edits. The task is two small edits, both on the login and session path. |
 
 Every Ship case also needs at least one commit, the visible tests green, and no Stop. The fixtures are Python with only the standard library, so they need nothing installed.
+
+`feature-due-date` adds a stored field, so its design step must run. `designer_spawns_mean` should read 1 there, and 0 on `feature-search`, which adds a subcommand shaped like `list`. On `refactor-report-dedupe` it depends on the target shape the run names. Bug fix and Stop runs never design. A 0 on `feature-due-date` means the skip rule in `design.md` let a new shape through without a sketch.
 
 ## Run it
 
