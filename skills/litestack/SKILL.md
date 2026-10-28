@@ -78,9 +78,9 @@ To stop, name the Gate line or tripwire that fired, and what the task needs that
 
 The designer (`design.md`) and the reviewer (Review below) follow these rules.
 
-- Make one Agent call with `subagent_type` set to `litestack-designer` or `litestack-reviewer`, `effort: "xhigh"`, and `run_in_background: true`. Pass no `model`, so it runs on this session's model.
+- Make one Agent call with `subagent_type` set to `litestack-designer` or `litestack-reviewer`. Pass no `model` or `effort`. Each agent's definition sets `model: inherit` and `effort: xhigh`, so it runs on this session's model even when a default subagent model is configured. Run it in the background, through the tool's background option when it has one, and keep working.
 - Each one is a fresh subagent with its own empty context. It sees the code and its brief, and nothing of this session. Never fork this session for it, and never resume or message an earlier one.
-- If the agent type does not exist, the session started before the install. Use `subagent_type: "general-purpose"`, and open the brief with "Read `~/.claude/agents/<type>.md` in full and follow it. Edit nothing."
+- If the agent type does not exist, the session started before the install. Use `subagent_type: "general-purpose"` with `effort: "xhigh"` and this session's model, and open the brief with "Read `~/.claude/agents/<type>.md` in full and follow it. Edit nothing."
 - Give pointers and facts, not conclusions.
 
 ## Review
