@@ -1,0 +1,54 @@
+{
+  "case": "bug-split-remainder",
+  "run": 1,
+  "kind": "bug",
+  "expect": "ship",
+  "mode": "subagent",
+  "workdir": "/private/tmp/claude-501/-Users-ryan-Desktop-repos-litestack--claude-worktrees-goofy-meninsky-bc0664/0eeffd90-541e-46a5-b3c9-9e9241f0172e/scratchpad/evalwork/litestack-eval-subagent-baseline-3ce1296-lmqt0m3c/bug-split-remainder-1/repo",
+  "base": "37c4e6c92fdb47e74c0edff2dbcb06f084cfa8d7",
+  "error": null,
+  "run_error": null,
+  "reply": "Uneven splits now add up to the amount entered. `python3 -m tabsplit 100.00 alice bob carol` prints `Total: $100.00` instead of `$99.99`. Earlier names in the list pay the extra cents.\n\n**What was broken.** When a bill did not divide evenly, the leftover cents disappeared. Each person's share was right to within a cent, but the shares added up to less than the bill.\n\n**Root cause.** `allocate` in `tabsplit/money.py` floored each share with `total_cents // parts` and threw away `total_cents % parts`. I measured each stage with a probe script. `parse_amount` and `add_tip` gave the correct 10000 cents. `allocate(10000, 3)` returned `[3333, 3333, 3333]`, which sums to 9999. The repo has one commit, so this is not a regression from a later change.\n\n**Fix.** `allocate` now uses `divmod` and gives one extra cent to each of the first `remainder` parts. Shares differ by at most a cent and always sum to the total. That holds for negative totals too.\n```python\nshare, remainder = divmod(total_cents, parts)\nreturn [share + 1] * remainder + [share] * (parts - remainder)\n```\n\n**Verification.** Failing output before the fix:\n```\n$ python3 -m tabsplit 100.00 alice bob carol\nalice: $33.33\nbob: $33.33\ncarol: $33.33\nTotal: $99.99\n```\nThe two new pin tests failed on the old code. The receipt test got `Total: $99.99` where it expected `$100.00`, and 1325 `allocate` subtests (totals -150 to 150, 1 to 7 parts) lost cents. They were committed first, failing.\n\nPassing output after the fix:\n```\n$ python3 -m tabsplit 100.00 alice bob carol\nalice: $33.34\nbob: $33.33\ncarol: $33.33\nTotal: $100.00\n$ python3 -m tabsplit 100.00 alice bob carol --tip 18\nalice: $39.34\nbob: $39.33\ncarol: $39.33\nTotal: $118.00\n$ python3 -m unittest discover -s tests\nRan 11 tests in 0.009s\nOK\n```\n- `0.05` across 7 people gives five at `$0.01`, two at `$0.00`, and `Total: $0.05`.\n- Even splits are unchanged. `90.00` three ways is `$30.00` each.\n- Tip rounding is unchanged. `80.00` two ways with `--tip 15` is `$46.00` each.\n- `allocate` has one caller, `split_even`, and that path is covered by the CLI runs above.\n\n**Review.** One fresh reviewer reran every check. It also confirmed both pins fail when the old `money.py` is loaded. It raised one finding.\n- Dismissed. Duplicate names still lose money. `python3 -m tabsplit 100.00 alice alice bob` prints `Total: $66.66`, because `split_even` keys a dict by name and the second `alice` overwrites the first. That line (`tabsplit/bill.py:5`) is not in this diff, and `main` behaves the same way. The fix does not make it worse. It is listed under open items below.\n\n**Principles that changed a decision.**\n- Fix root causes. I fixed `allocate`, where the cents are lost. Patching the total in `receipt` would have printed a correct total over shares that still don't add up.\n- Encode lessons in structure. The \"total must always match\" rule is a test that checks the sum over a range of totals and party sizes, not a comment.\n- Smallest change. I left the duplicate-name defect out, because it has a different mechanism.\n\n**Could not verify.** The project has no lint or type-check config, so neither ran. The skill's task-list tool is not available to a subagent, so I followed the playbook steps without a visible list.\n\n**Branch and commits.** There is no remote, so there is no PR. Branch `fix/split-remainder` off `main`, with a clean tree and no uncommitted edits:\n- `d569e0c test(money): pin shares that must add up to the bill total`\n- `a4e89fc fix(money): hand out remainder cents in allocate`\n\nFiles: `tabsplit/money.py`, `tests/test_bill.py`, `tests/test_money.py` (all under `/private/tmp/claude-501/-Users-ryan-Desktop-repos-litestack--claude-worktrees-goofy-meninsky-bc0664/0eeffd90-541e-46a5-b3c9-9e9241f0172e/scratchpad/evalwork/litestack-eval-subagent-baseline-3ce1296-lmqt0m3c/bug-split-remainder-1/repo/`).\n\n**Open items.**\n- Decision for you: who pays the extra cents. I gave them to the first names in the order typed. Rotating them or choosing at random are the alternatives.\n- Duplicate names. Repeating a name drops that person's share from the total. This is a separate bug. The smallest fix would reject duplicate names when the command line is parsed.",
+  "skill_invoked": true,
+  "wall_seconds": 223.0,
+  "tokens": {
+    "inputTokens": 44,
+    "cacheCreationInputTokens": 112573,
+    "cacheReadInputTokens": 1343663,
+    "outputTokens": 20179
+  },
+  "tool_uses": 19,
+  "subagents": {
+    "litestack-reviewer": 1
+  },
+  "grade": {
+    "tree": "/private/tmp/claude-501/-Users-ryan-Desktop-repos-litestack--claude-worktrees-goofy-meninsky-bc0664/0eeffd90-541e-46a5-b3c9-9e9241f0172e/scratchpad/evalwork/litestack-eval-subagent-baseline-3ce1296-lmqt0m3c/bug-split-remainder-1/repo",
+    "commits": 2,
+    "commit_titles": [
+      "test(money): pin shares that must add up to the bill total",
+      "fix(money): hand out remainder cents in allocate"
+    ],
+    "source_files_changed": [
+      "tabsplit/money.py"
+    ],
+    "source_lines_added": 2,
+    "source_lines_deleted": 2,
+    "left_uncommitted": [],
+    "test_files_changed": [
+      "tests/test_bill.py",
+      "tests/test_money.py"
+    ],
+    "said_stop": false,
+    "stopped": false,
+    "stop_correct": true,
+    "visible_exit": 0,
+    "visible_tail": "...........\n----------------------------------------------------------------------\nRan 11 tests in 0.012s\n\nOK\n",
+    "hidden_exit": 0,
+    "hidden_tail": ".......\n----------------------------------------------------------------------\nRan 7 tests in 0.036s\n\nOK\n",
+    "pin_fails_on_base": true,
+    "test_commit_before_fix": true,
+    "duplicate_counts": [],
+    "pass": true
+  },
+  "final_context_tokens": 82337
+}

@@ -1,0 +1,70 @@
+{
+  "case": "refactor-report-dedupe",
+  "run": 2,
+  "kind": "refactor",
+  "expect": "ship",
+  "mode": "subagent",
+  "workdir": "/private/tmp/claude-501/-Users-ryan-Desktop-repos-litestack--claude-worktrees-goofy-meninsky-bc0664/0eeffd90-541e-46a5-b3c9-9e9241f0172e/scratchpad/evalwork/litestack-eval-subagent-baseline-3ce1296-lmqt0m3c/refactor-report-dedupe-2/repo",
+  "base": "569e576682796a10ba73274ed608519ba201f0c3",
+  "error": null,
+  "run_error": null,
+  "reply": "## Result\nCode that calls `daily_summary`, `weekly_summary`, or `monthly_summary` sees no change. Every output and every raised exception matches `main` across 15084 recorded calls (measured). Changes to grouping, totals, or the table format now happen in one place, `_summary` in `ledger/reports.py`, not three.\n\n## Structure that changed\n- One private function, `_summary(entries, period_of)`, now does the grouping, the per-category totals, the empty case, and the table.\n- Each public function passes in only its period key. Daily and monthly use a lambda. Weekly uses a nested `week_of` because it has to unpack `isocalendar()`.\n- Names, signatures, and `parse_line` are unchanged. The file went from 65 to 41 lines (measured).\n\n## Pin\n- `python3 -B -m unittest discover -s tests` ran after the last edit. 5 tests passed in about 0.06 s.\n- The existing tests check one input per report and an empty input only for daily. So I added `.pin/record_outputs.py`. It records each report's output, or the exception it raises, for 2514 cases. Each case runs once as a list and once as an iterator.\n- The cases cover ISO week year boundaries, years 1 and 9999, long and empty categories, int and negative amounts, and floats where summation order changes the result. They also include 500 random lists with 1 to 3 bad entries injected.\n- I checked that the summation-order cases actually catch a change. My first pick did not, since both orders gave 4.00. I replaced it with `1e16, 1.0, 1.0`. The two orders then give 10000000000000000.00 and 10000000000000002.00 (measured).\n\n## Equivalence proof\n- `before.txt` was recorded from `main`'s `ledger` package, extracted to `.pin/main` with `git archive`. `after.txt` was recorded from the final commit.\n- `diff` between them exits 0. All 15084 outputs match, and 2904 of them are raised exceptions.\n- The pin does catch real differences. Against my first build it reported 540 differing lines, all of them exceptions.\n\n## Reader-load delta\nBefore, a reader had to compare three 17-line bodies to see that only the key line differed. Now each report shows only its key, in 1 to 4 lines, and the shared logic is one 15-line function. The cost is one extra call into `_summary`. It is more than a pass-through because each report supplies its own key rule.\n\n## What shipped and what I reverted\n- One commit shipped.\n- I reverted the designer's one-pass loop, which built the totals while grouping. Normal output was unchanged. But when an input had more than one bad entry, a different exception fired. `_summary` now does the steps in the old order. It groups first, then totals each period inside the sorted output loop.\n\n## Review\nOne reviewer, one finding.\n- Fixed. [warning] The one-pass loop changed which exception fires when several entries are bad. For example, an `AttributeError` became a `TypeError`. Nothing in the repo can hit this, because `parse_line` always builds valid entries. But the functions are public and `Entry` does no validation. So I restored the old order and added cases with several bad entries to the pin. Results are above.\n- Dismissed. None.\n- I did not run a second review. The fix stayed inside `_summary`, the function the finding named, and it is the shape the reviewer suggested.\n\n## Principles that changed a decision\n- Prove it works. The pin became a scripted diff with its output kept. The weak float case was replaced. The baseline was re-recorded from `main`'s code once the pin grew.\n- Verifiable units. I built in two steps and ran the pin after each, first daily, then weekly and monthly.\n- Model the domain. The only part that differs is a key function of `day`, so each report states only its period rule.\n- The rule to pick the option closest to existing behavior settled the error-order question in favor of the old order.\n\n## Not verified\n- There is no CLI or UI. The real surface is what the public functions return, and the comparison script calls them directly.\n- I ran everything under Python 3.9.6 only. I did not run other versions.\n- The task-list tool refused calls in this subagent session, so I tracked the playbook steps myself. I skipped step 4 (Subtract first) because the three functions had no dead code, wrappers, or orphan references.\n\n## Branch and commit\n- No PR. The repository has no remote, so I stopped at the commit.\n- Branch `refactor/report-summary-dedupe`, commit `a59354a`, `refactor(reports): share _summary across daily, weekly, and monthly reports`. No uncommitted edits to tracked files.\n- The untracked `.pin/` folder holds the evidence and is not committed. Delete it when you are done.\n  - /private/tmp/claude-501/-Users-ryan-Desktop-repos-litestack--claude-worktrees-goofy-meninsky-bc0664/0eeffd90-541e-46a5-b3c9-9e9241f0172e/scratchpad/evalwork/litestack-eval-subagent-baseline-3ce1296-lmqt0m3c/refactor-report-dedupe-2/repo/.pin/record_outputs.py\n  - /private/tmp/claude-501/-Users-ryan-Desktop-repos-litestack--claude-worktrees-goofy-meninsky-bc0664/0eeffd90-541e-46a5-b3c9-9e9241f0172e/scratchpad/evalwork/litestack-eval-subagent-baseline-3ce1296-lmqt0m3c/refactor-report-dedupe-2/repo/.pin/before.txt\n  - /private/tmp/claude-501/-Users-ryan-Desktop-repos-litestack--claude-worktrees-goofy-meninsky-bc0664/0eeffd90-541e-46a5-b3c9-9e9241f0172e/scratchpad/evalwork/litestack-eval-subagent-baseline-3ce1296-lmqt0m3c/refactor-report-dedupe-2/repo/.pin/after.txt\n  - /private/tmp/claude-501/-Users-ryan-Desktop-repos-litestack--claude-worktrees-goofy-meninsky-bc0664/0eeffd90-541e-46a5-b3c9-9e9241f0172e/scratchpad/evalwork/litestack-eval-subagent-baseline-3ce1296-lmqt0m3c/refactor-report-dedupe-2/repo/.pin/onepass.txt\n  - /private/tmp/claude-501/-Users-ryan-Desktop-repos-litestack--claude-worktrees-goofy-meninsky-bc0664/0eeffd90-541e-46a5-b3c9-9e9241f0172e/scratchpad/evalwork/litestack-eval-subagent-baseline-3ce1296-lmqt0m3c/refactor-report-dedupe-2/repo/.pin/main/\n- To rerun from the repo root, run `python3 -B .pin/record_outputs.py .pin/before.txt .pin/main`, then `python3 -B .pin/record_outputs.py .pin/after.txt`, then `diff .pin/before.txt .pin/after.txt`.",
+  "skill_invoked": true,
+  "wall_seconds": 542.8,
+  "tokens": {
+    "inputTokens": 76,
+    "cacheCreationInputTokens": 177229,
+    "cacheReadInputTokens": 2715558,
+    "outputTokens": 50693
+  },
+  "tool_uses": 27,
+  "subagents": {
+    "litestack-designer": 1,
+    "litestack-reviewer": 1
+  },
+  "grade": {
+    "tree": "/private/tmp/claude-501/-Users-ryan-Desktop-repos-litestack--claude-worktrees-goofy-meninsky-bc0664/0eeffd90-541e-46a5-b3c9-9e9241f0172e/scratchpad/evalwork/litestack-eval-subagent-baseline-3ce1296-lmqt0m3c/refactor-report-dedupe-2/repo",
+    "commits": 1,
+    "commit_titles": [
+      "refactor(reports): share _summary across daily, weekly, and monthly reports"
+    ],
+    "source_files_changed": [
+      ".pin/after.txt",
+      ".pin/before.txt",
+      ".pin/main/ledger/__init__.py",
+      ".pin/main/ledger/entries.py",
+      ".pin/main/ledger/reports.py",
+      ".pin/onepass.txt",
+      ".pin/record_outputs.py",
+      "ledger/reports.py"
+    ],
+    "source_lines_added": 16,
+    "source_lines_deleted": 40,
+    "left_uncommitted": [
+      ".pin/after.txt",
+      ".pin/before.txt",
+      ".pin/main/ledger/__init__.py",
+      ".pin/main/ledger/entries.py",
+      ".pin/main/ledger/reports.py",
+      ".pin/onepass.txt",
+      ".pin/record_outputs.py"
+    ],
+    "test_files_changed": [],
+    "said_stop": true,
+    "stopped": false,
+    "stop_correct": true,
+    "visible_exit": 0,
+    "visible_tail": ".....\n----------------------------------------------------------------------\nRan 5 tests in 0.000s\n\nOK\n",
+    "hidden_exit": 0,
+    "hidden_tail": "..\n----------------------------------------------------------------------\nRan 2 tests in 0.001s\n\nOK\n",
+    "pin_fails_on_base": null,
+    "test_commit_before_fix": false,
+    "duplicate_counts": [
+      1,
+      2,
+      1
+    ],
+    "pass": true
+  },
+  "final_context_tokens": 114160
+}

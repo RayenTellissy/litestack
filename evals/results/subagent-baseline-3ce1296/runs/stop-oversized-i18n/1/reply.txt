@@ -1,0 +1,31 @@
+I stopped before changing anything. This task is too big for litestack. Nobody sees a change yet, and the repository is as it was.
+
+**Why it stopped.** It fails this Gate line: "The change stays in one feature area, at most about 6 non-test files and 300 changed non-test lines." The counts below are measured with grep over `shop/`:
+- `shop/` has 100 message functions in 10 area modules, 10 in each. The areas are cart, catalog, checkout, coupons, inventory, orders, returns, reviews, shipping and wishlist.
+- Three new languages means at least 300 translated strings. That alone reaches the 300-line limit before any signature, lookup or CLI change.
+- All 100 functions gain a `lang` parameter. So all 10 area modules change, plus `shop/cli.py`. That is 11 non-test files against a limit of about 6.
+- The change covers all ten areas, not one.
+- I estimate (inferred from the counts above) 500 to 700 changed non-test lines across 11 or more files.
+
+**What the task needs that litestack does not do.** It needs a plan spread over several PRs. It also needs some product and design choices that each have real tradeoffs:
+- **Money format.** 10 messages print amounts like `12.50 EUR`. French and German normally write `12,50 €`. Someone has to decide whether to keep the English format or localize it.
+- **Plurals.** 14 messages put a count before a noun, as in `Found {count} products.` and `Arrives in {days} days.`. Each language needs its own singular and plural rules, or the current English-only behaviour carries over.
+- **Unknown `lang` value.** It could raise an error or fall back to English.
+- **Where strings live.** The options are a table in each area module, one shared catalog, or gettext `.po` files.
+- **Translation quality.** 300 strings need review by native speakers. Tests cannot prove they are correct.
+
+**Suggested split.** Each slice fits the Gate.
+1. The lookup mechanism, the `--lang` CLI option and the cart area. That is 10 messages, 30 strings and about 3 files.
+2. One PR for each remaining area, about 40 to 60 lines in one file each.
+
+**Handover**
+- **Acceptance check.** I didn't write one. The Gate failed at Feature step 1, before step 4 where the check gets written.
+- **Baseline.** `python3 -m unittest discover -s tests` ran 5 tests and passed. I ran it before stopping.
+- **Branch and commits.** I created no branch. `main` is at `3fff33c`. The tree is clean, with no commits and no uncommitted edits.
+- **Subagents.** I started no designer or reviewer, because the stop came before the design step.
+
+**Principles.** "Design it as if it was always there" shaped the suggested split. The lookup mechanism lands once, first, so each area PR only adds strings rather than a new special case.
+
+**Not verified.** I have not checked the line estimate against a real diff, because no diff was written. It comes from the message and file counts.
+
+**Open items.** The money-format, plural and unknown-`lang` choices are still yours to make. So is the split, if you want this done in litestack-sized pieces.

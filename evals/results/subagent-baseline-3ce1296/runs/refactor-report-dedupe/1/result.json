@@ -1,0 +1,62 @@
+{
+  "case": "refactor-report-dedupe",
+  "run": 1,
+  "kind": "refactor",
+  "expect": "ship",
+  "mode": "subagent",
+  "workdir": "/private/tmp/claude-501/-Users-ryan-Desktop-repos-litestack--claude-worktrees-goofy-meninsky-bc0664/0eeffd90-541e-46a5-b3c9-9e9241f0172e/scratchpad/evalwork/litestack-eval-subagent-baseline-3ce1296-lmqt0m3c/refactor-report-dedupe-1/repo",
+  "base": "569e576682796a10ba73274ed608519ba201f0c3",
+  "error": null,
+  "run_error": null,
+  "reply": "The three summaries now share one implementation, and their output is unchanged. Callers of `daily_summary`, `weekly_summary` and `monthly_summary` see nothing different. From now on, a change to grouping, totals or the table format is one edit instead of three matching ones. There is no PR because the repository has no remote. The work is one local commit.\n\n**What changed**\n- The grouping, per-category totals and table formatting moved into one private function, `_summary(entries, period_key)` in `ledger/reports.py`.\n- Each public function now passes only how a date maps to its period:\n  - daily uses `day.isoformat()`.\n  - weekly uses a nested `iso_week` that builds the ISO year and zero-padded week.\n  - monthly uses `f\"{day.year}-{day.month:02d}\"`.\n- Public names, signatures and `parse_line` are untouched.\n\n**Pin**\n- Before any edit, I wrote `.pin/compare_reports.py`. It loads `ledger/reports.py` from `main` with `git show` and runs the old and new versions of all three functions on 315 inputs. It compares the exact output strings, or the exception type and message.\n- The inputs include:\n  - the test entries, empty input, and generators (input still read once)\n  - unsorted input, wide values, and a `datetime` as the day\n  - ISO year boundaries (2020-12-31 and 2021-01-01 both group as `2020-W53`)\n  - years below 1000, where keys sort as plain strings\n  - a summation-order case (prints `0.30` as written, `0.00` if summed in sorted order)\n  - error paths (a bad day still raises before a bad amount)\n  - 300 seeded random lists\n- The 5 existing unit tests also cover the contract.\n\n**Equivalence proof (measured)**\n- Before the edits, the pin made 945 comparisons with 0 mismatches. It also passed after each of the three edits, one per function, and after the last edit.\n- `diff .pin/outputs_before.txt .pin/outputs_after.txt` prints nothing, so the 945 recorded outputs match exactly.\n- `python3 -m unittest discover -s tests` ran 5 tests, all OK.\n- There is no CLI or UI. The pin calls the public functions directly, and those functions are the whole surface.\n\n**Reader load**\n- Before, a reader had to compare three 17-line copies to find the one line that differed in each.\n- Now there is one 17-line body and three short functions that each state their period rule.\n- The file went from 65 to 42 lines. The diff is 12 insertions and 35 deletions (measured). There is one new call layer.\n\n**Shipped and reverted**\n- Shipped: the dedupe commit.\n- Reverted: nothing.\n- Skipped:\n  - Step 4, Subtract first. Nothing in the file was dead. `parse_line` still uses the `Entry` import, and its local `datetime` import is outside the request.\n  - No new behavior.\n\n**Review**\n- One fresh reviewer reran the pin, the `diff` and the unit tests, all green.\n- It also broke `weekly_summary` in memory, and the pin caught it with 265 mismatches. That shows the comparison can detect a change.\n- There were no findings, so nothing was fixed or dismissed.\n\n**Principles that changed a decision**\n- Smallest change and Model the domain: the only thing that varies is a date-to-key function. So `_summary` takes that function, not a period name or a lookup table.\n- Subtract before you add: I left `parse_line`'s local import alone instead of tidying it.\n- Prove it works: I loaded the base module straight from `main` so the reviewer could rerun the comparison. That sent the pin past the existing tests into float summation order and which error raises first.\n- Design sketch: I kept `lambda day: day.isoformat()` rather than `date.isoformat`, so a `datetime` day prints as before. I kept the f-strings rather than `strftime`, which pads years below 1000 differently on some platforms.\n\n**Not verified**\n- The task-list tool refuses calls from a subagent, so the playbook steps were tracked here without a visible list.\n\n**Where it is**\n- Branch `refactor/report-summary-dedupe`, commit `2ccfd1c refactor(reports): share one _summary across the period reports`.\n- `.pin/` (the comparison script and its two output files) is still untracked and not committed. Delete it or keep it.\n- No stop fired, and nothing is waiting on you.",
+  "skill_invoked": true,
+  "wall_seconds": 405.2,
+  "tokens": {
+    "inputTokens": 60,
+    "cacheCreationInputTokens": 162021,
+    "cacheReadInputTokens": 1882274,
+    "outputTokens": 37378
+  },
+  "tool_uses": 19,
+  "subagents": {
+    "litestack-designer": 1,
+    "litestack-reviewer": 1
+  },
+  "grade": {
+    "tree": "/private/tmp/claude-501/-Users-ryan-Desktop-repos-litestack--claude-worktrees-goofy-meninsky-bc0664/0eeffd90-541e-46a5-b3c9-9e9241f0172e/scratchpad/evalwork/litestack-eval-subagent-baseline-3ce1296-lmqt0m3c/refactor-report-dedupe-1/repo",
+    "commits": 1,
+    "commit_titles": [
+      "refactor(reports): share one _summary across the period reports"
+    ],
+    "source_files_changed": [
+      ".pin/compare_reports.py",
+      ".pin/outputs_after.txt",
+      ".pin/outputs_before.txt",
+      "ledger/reports.py"
+    ],
+    "source_lines_added": 12,
+    "source_lines_deleted": 35,
+    "left_uncommitted": [
+      ".pin/compare_reports.py",
+      ".pin/outputs_after.txt",
+      ".pin/outputs_before.txt"
+    ],
+    "test_files_changed": [],
+    "said_stop": true,
+    "stopped": false,
+    "stop_correct": true,
+    "visible_exit": 0,
+    "visible_tail": ".....\n----------------------------------------------------------------------\nRan 5 tests in 0.000s\n\nOK\n",
+    "hidden_exit": 0,
+    "hidden_tail": "..\n----------------------------------------------------------------------\nRan 2 tests in 0.001s\n\nOK\n",
+    "pin_fails_on_base": null,
+    "test_commit_before_fix": false,
+    "duplicate_counts": [
+      1,
+      2,
+      1
+    ],
+    "pass": true
+  },
+  "final_context_tokens": 98232
+}

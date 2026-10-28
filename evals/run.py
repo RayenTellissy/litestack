@@ -184,6 +184,23 @@ def parse_transcript(path, skill_marker):
     }
 
 
+def transcript_tokens(paths):
+    """Token usage summed over every API call in agent transcripts, counting each message once."""
+    calls = {}
+    for path in paths:
+        for line in path.read_text(errors="replace").splitlines():
+            try:
+                event = json.loads(line)
+            except ValueError:
+                continue
+            message = event.get("message") or {}
+            if event.get("type") == "assistant" and message.get("usage"):
+                calls[(path.name, message.get("id"))] = message["usage"]
+    keys = {"inputTokens": "input_tokens", "cacheCreationInputTokens": "cache_creation_input_tokens",
+            "cacheReadInputTokens": "cache_read_input_tokens", "outputTokens": "output_tokens"}
+    return {mine: sum(u.get(theirs) or 0 for u in calls.values()) for mine, theirs in keys.items()}
+
+
 def is_test(path):
     name = os.path.basename(path)
     return path.startswith("tests/") or "/tests/" in path or name.startswith("test_") or name.endswith("_test.py")
@@ -248,6 +265,12 @@ def grade(case, repo, base, reply):
     tree = pick_tree(repo, base)
     changed = changed_lines(tree, base)
     source = {p: v for p, v in changed.items() if not is_test(p)}
+    # Line counts judge what shipped. Scratch files left in the tree still count against a Stop.
+    committed_all = {}
+    for line in git(tree, "diff", "--numstat", "--no-renames", base, "HEAD").splitlines():
+        added, deleted, path = line.split("\t", 2)
+        committed_all[path] = (int(added) if added != "-" else 0, int(deleted) if deleted != "-" else 0)
+    committed = {p: v for p, v in committed_all.items() if not is_test(p)}
     tests = sorted(p for p in changed if is_test(p))
     commits = git(tree, "log", "--reverse", "--format=%s", f"{base}..HEAD").splitlines()
     g = {
@@ -255,8 +278,9 @@ def grade(case, repo, base, reply):
         "commits": len(commits),
         "commit_titles": commits,
         "source_files_changed": sorted(source),
-        "source_lines_added": sum(a for a, _ in source.values()),
-        "source_lines_deleted": sum(d for _, d in source.values()),
+        "source_lines_added": sum(a for a, _ in committed.values()),
+        "source_lines_deleted": sum(d for _, d in committed.values()),
+        "left_uncommitted": sorted(set(changed) - set(committed_all)),
         "test_files_changed": tests,
         "said_stop": bool(STOP_WORD.search(reply)),
     }
@@ -435,7 +459,7 @@ def summarize_case(name, records):
         "wall_median_s": median([r["wall_seconds"] for r in graded]),
         "cost_mean_usd": mean([r.get("cost_usd") for r in graded]),
         "output_tokens_median": median([r["tokens"].get("outputTokens") for r in graded]),
-        "total_tokens_median": median([r["tokens"].get("totalTokens") or sum(r["tokens"].get(k, 0) for k in (
+        "total_tokens_median": median([sum(r["tokens"].get(k, 0) for k in (
             "inputTokens", "outputTokens", "cacheReadInputTokens", "cacheCreationInputTokens")) or None for r in graded]),
         "designer_spawns_mean": mean(designer),
         "reviewer_spawns_mean": mean(reviewer),
@@ -460,7 +484,7 @@ def write_summary(out_root, records=None):
     summary = {"meta": meta, "total": total, "cases": rows}
     (out_root / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
     cols = ["case", "pass", "stop_correct", "hidden_pass", "pin_fails_on_base", "commits_median",
-            "wall_median_s", "cost_mean_usd", "total_tokens_median", "designer_spawns_mean", "reviewer_spawns_mean", "errors"]
+            "wall_median_s", "cost_mean_usd", "output_tokens_median", "total_tokens_median", "designer_spawns_mean", "reviewer_spawns_mean", "errors"]
     lines = [f"# {meta['label']}", "",
              f"Mode {meta.get('mode', 'cli')}. Skill {meta['skill_sha256']} at {meta['commit']}{' (dirty)' if meta['skill_dirty'] else ''}, "
              f"{meta['claude_version']}, model {meta.get('model') or 'default'}, {meta['runs_per_case']} runs per case.", "",
@@ -485,16 +509,18 @@ def cmd_grade(opts):
         if usage.exists():
             u = json.loads(usage.read_text())
             record["wall_seconds"] = round(u["duration_ms"] / 1000, 1)
-            record["tokens"] = {"totalTokens": u["subagent_tokens"]}
+            record["final_context_tokens"] = u["subagent_tokens"]
             record["tool_uses"] = u.get("tool_uses")
         if (path.parent / "transcript.jsonl").exists() and record.get("mode") == "subagent":
             record["subagents"] = parse_transcript(path.parent / "transcript.jsonl", "")["subagents"]
+            record["tokens"] = transcript_tokens([path.parent / "transcript.jsonl", *sorted(path.parent.glob("nested-*.jsonl"))])
         if record.get("mode") == "subagent" and not reply.exists():
             record["error"] = "no reply recorded"
         if record.get("workdir") and Path(record["workdir"]).exists():
             repo = Path(record["workdir"])
             base = record.get("base") or git(repo, "rev-list", "--max-parents=0", "HEAD").split()[0]
             record["grade"] = grade(cases[record["case"]], repo, base, record.get("reply", ""))
+            shutil.copy(repo.parent / "diff.patch", path.parent / "diff.patch")
             path.write_text(json.dumps(record, indent=2))
         records.append(record)
     write_summary(out_root, records)
@@ -505,7 +531,8 @@ def cmd_compare(opts):
     print(f"A = {opts.a} (skill {a['meta']['skill_sha256']}), B = {opts.b} (skill {b['meta']['skill_sha256']})\n")
     if a["meta"].get("mode", "cli") != b["meta"].get("mode", "cli"):
         print("Warning: A and B ran in different modes, so their numbers are not comparable.\n")
-    cols = ["pass", "stop_correct", "hidden_pass", "pin_fails_on_base", "wall_median_s", "cost_mean_usd", "total_tokens_median"]
+    cols = ["pass", "stop_correct", "hidden_pass", "pin_fails_on_base", "wall_median_s", "cost_mean_usd",
+            "output_tokens_median", "total_tokens_median"]
     print("| case | " + " | ".join(f"{c} A → B" for c in cols) + " |")
     print("|---|" + "---|" * len(cols))
     rows_b = {row["case"]: row for row in b["cases"]}

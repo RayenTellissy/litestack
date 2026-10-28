@@ -54,7 +54,7 @@ When the terminal `claude` cannot run, a Claude Code session can drive the same 
    python3 evals/run.py prepare --label subagent-baseline-$(git rev-parse --short HEAD) --workdir <folder the session can write>
    ```
 
-2. Ask the session to start one `general-purpose` agent per run folder, with that folder's `brief.md` as the prompt and no model override. When an agent finishes, the session saves its final message as `reply.txt`, its usage numbers as `usage.json` (`{"subagent_tokens": …, "tool_uses": …, "duration_ms": …}`), and its transcript as `transcript.jsonl`, all in that run folder.
+2. Ask the session to start one `general-purpose` agent per run folder, with that folder's `brief.md` as the prompt and no model override. When an agent finishes, the session saves its final message as `reply.txt`, its usage numbers as `usage.json` (`{"subagent_tokens": …, "tool_uses": …, "duration_ms": …}`), its transcript as `transcript.jsonl`, and the transcript of each designer or reviewer it started as `nested-<id>.jsonl`, all in that run folder. The usage numbers give wall time. Token counts come from the transcripts, because the session's `subagent_tokens` is only the agent's final context size.
 3. Grade it.
 
    ```bash
@@ -83,16 +83,33 @@ Each run writes `evals/results/<label>/runs/<case>/<n>/result.json` and `diff.pa
 | `commits_median` | Commits on top of the base. |
 | `wall_median_s`, `cost_mean_usd` | Wall time from the runner, and cost from the CLI's final result event, subagents included. |
 | `designer_spawns_mean`, `reviewer_spawns_mean` | How often the run spawned each litestack subagent. |
-| `total_tokens_median` | All tokens, subagents included. |
+| `output_tokens_median`, `total_tokens_median` | Output tokens, and all tokens processed with cache reads included. Both count subagents. |
 | `errors` | Runs lost to auth, usage limits, a crash, or a helper-agent run with no saved reply. They are left out of every rate. A usage-limit or auth error stops the remaining runs. |
 
-Each `result.json` also keeps the final reply, the commit titles, `test_commit_before_fix`, `skill_invoked`, `permission_denials`, and the tails of the test output. A timeout or a max-turns ending counts as a failed run, not an error.
+Each `result.json` also keeps the final reply, the commit titles, `test_commit_before_fix`, `skill_invoked`, `permission_denials`, `left_uncommitted` (files the run left in the tree but did not commit), and the tails of the test output. Line counts for the refactor rule come from the commits, so scratch files left in the tree do not count against it. A timeout or a max-turns ending counts as a failed run, not an error.
 
 Three runs per case is the floor. A one-run swing on one case is noise. Trust a change when it moves several cases the same way, or rerun the moved cases with `--runs 5`.
 
 ## Baseline
 
-Not recorded yet. The CLI login on this machine hit its weekly usage limit on 2026-10-28, and the eval could not be launched from inside a Claude Code session. Record it with the `run` command above, labelled `baseline-<commit>`, and commit `evals/results/<label>/`.
+`results/subagent-baseline-3ce1296/` is the first baseline. It was recorded in helper-agent mode on 2026-10-28, on Opus 5.5, with the skill as of `eafa70d` (skill hash `ab1b8a5ff68b3054`). It passed 13 of 15.
+
+| Case | Pass | Median wall | Median output tokens |
+|---|---|---|---|
+| `bug-split-remainder` | 3/3 | 223 s | 20k |
+| `feature-search` | 1/3 | 400 s | 36k |
+| `refactor-report-dedupe` | 3/3 | 505 s | 47k |
+| `stop-gate-auth` | 3/3 | 97 s | 9k |
+| `stop-oversized-i18n` | 3/3 | 81 s | 7k |
+
+What it showed:
+
+- Every Stop case stopped at the right Gate line with no edits. Every Ship case shipped, with the pin failing on the old code and the reviewer run.
+- Two of three feature runs printed `No matching tasks.` to stderr, citing `done`'s error message. The task says only "prints", and `list` prints its empty message to stdout. The hidden test expects stdout, so those runs fail.
+- One reviewer wrote a file outside its repo, though its prompt says never to create a file. Another run wrote a check script outside its repo.
+- All three refactor runs left an untracked `.pin/` folder of comparison scripts and recorded output.
+
+The CLI-mode baseline is not recorded yet. The CLI login on this machine hit its weekly usage limit on 2026-10-28. Record it with the `run` command above, labelled `baseline-<commit>`, and commit `evals/results/<label>/`.
 
 ## Why not `claude plugin eval`
 

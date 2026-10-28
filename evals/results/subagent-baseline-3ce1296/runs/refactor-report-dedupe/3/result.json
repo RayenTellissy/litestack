@@ -1,0 +1,66 @@
+{
+  "case": "refactor-report-dedupe",
+  "run": 3,
+  "kind": "refactor",
+  "expect": "ship",
+  "mode": "subagent",
+  "workdir": "/private/tmp/claude-501/-Users-ryan-Desktop-repos-litestack--claude-worktrees-goofy-meninsky-bc0664/0eeffd90-541e-46a5-b3c9-9e9241f0172e/scratchpad/evalwork/litestack-eval-subagent-baseline-3ce1296-lmqt0m3c/refactor-report-dedupe-3/repo",
+  "base": "569e576682796a10ba73274ed608519ba201f0c3",
+  "error": null,
+  "run_error": null,
+  "reply": "`daily_summary`, `weekly_summary` and `monthly_summary` now share one helper, and their output is unchanged. I checked that on 1,221 recorded outputs, which matched `main` byte for byte. There is no PR because the repo has no remote. The work is one commit, `fc88a68`, on branch `refactor/report-summaries`.\n\n**What changed in `ledger/reports.py`**\n- A new private function, `_summary(entries, period_of)`, does the grouping, category totals, row layout and the \"No entries.\" case.\n- Each public function keeps its name and signature. It only supplies its period key: `day.isoformat()` for daily, a small `iso_week` function for weekly, and `f\"{day.year}-{day.month:02d}\"` for monthly.\n- `_summary` builds per-period category totals in a single pass instead of storing lists of entries and totalling them afterwards. It still reads the input once, so a generator works.\n- `parse_line` and `ledger/entries.py` are untouched.\n- `tests/test_reports.py` gains one test, described below.\n\n**How I checked the output didn't change**\n- The existing tests cover only one dataset and test the empty case for daily only. So before editing I wrote a script, `.pin/record_summaries.py`, that runs all three functions on 407 inputs. That gives 1,221 outputs, saved from `main` as `.pin/before.txt` (63,402 lines).\n- The inputs include empty lists, tuples and generators, one-shot generators, ISO week-year boundaries, years 1, 9 and 999, long and unicode category names, negative amounts, and one case where the total depends on the order the floats are added in.\n- I made the change one function at a time and ran the script and tests after each step.\n- At the final commit, the script's output still matches `.pin/before.txt` exactly, and all 6 tests pass.\n- I checked the script isn't blind to subtle changes. A version that adds the total in sorted category order produced 50 differing lines. The reviewer separately confirmed that `before.txt` really is `main`'s output.\n- There is no linter or type checker in the repo, so I only checked that the file parses.\n\n**Easier to read**\n- The file drops 24 lines. Each original function was a 17-line copy, and the loops go from 9 to 3. The empty-case check goes from 3 copies to 1 and the row format string from 6 to 1.\n- The cost is one extra hop from each public function into `_summary`.\n- Nothing was reverted. There was no dead code to delete first.\n\n**Review findings**\n- Fixed: I had left a comment telling readers not to add up the total in sorted category order, which would change the printed float. I replaced it with the new test, `test_total_sums_in_first_seen_category_order`. It passes against `main`'s code and fails against the sorted-order version.\n- Dismissed: the reviewer showed that inputs which aren't proper `Entry` values can behave differently.\n  - One case is a generator that yields the same mutable object over and over, which now prints different totals.\n  - The other is entries with bad field values, which still raise an error but a different one (for example `TypeError` instead of `AttributeError`).\n  - No caller can produce either case. The only callers are the tests, which pass frozen `Entry` objects, and `parse_line` always builds `Entry(date, str, float)`.\n  - A frozen `Entry` can't be changed after it is yielded, and nothing catches those exceptions.\n\n**Principles that changed a decision**\n- **Model the domain:** the shared helper keeps running totals per period and category directly, which removed the second loop over stored entries.\n- **Encode lessons in structure:** the sum-order rule is now enforced by a test rather than a comment.\n- **Prove it works:** I wrote the recorded-output script before any edit and checked it would catch a subtle change.\n- **Smallest change:** I left `parse_line`'s local import alone, and there are no separate grouping, totals and formatting helpers.\n\n**Open items**\n- The \"output unchanged\" claim covers well-formed entries, meaning any `Entry` and any record whose fields don't change after it is handed over. For malformed records it does not hold, as described above.\n- `.pin/` is untracked and not committed. It holds `record_summaries.py`, `before.txt`, `after.txt`, and `run_test_against.py` (the script that ran the new test against `main` and the sorted-order version). Delete the folder when you're done with it.",
+  "skill_invoked": true,
+  "wall_seconds": 505.0,
+  "tokens": {
+    "inputTokens": 72,
+    "cacheCreationInputTokens": 174688,
+    "cacheReadInputTokens": 2405175,
+    "outputTokens": 47297
+  },
+  "tool_uses": 26,
+  "subagents": {
+    "litestack-designer": 1,
+    "litestack-reviewer": 1
+  },
+  "grade": {
+    "tree": "/private/tmp/claude-501/-Users-ryan-Desktop-repos-litestack--claude-worktrees-goofy-meninsky-bc0664/0eeffd90-541e-46a5-b3c9-9e9241f0172e/scratchpad/evalwork/litestack-eval-subagent-baseline-3ce1296-lmqt0m3c/refactor-report-dedupe-3/repo",
+    "commits": 1,
+    "commit_titles": [
+      "refactor(reports): share _summary across daily, weekly, and monthly summaries"
+    ],
+    "source_files_changed": [
+      ".pin/after.txt",
+      ".pin/before.txt",
+      ".pin/record_summaries.py",
+      ".pin/run_test_against.py",
+      "ledger/reports.py"
+    ],
+    "source_lines_added": 21,
+    "source_lines_deleted": 46,
+    "left_uncommitted": [
+      ".pin/after.txt",
+      ".pin/before.txt",
+      ".pin/record_summaries.py",
+      ".pin/run_test_against.py"
+    ],
+    "test_files_changed": [
+      "tests/test_reports.py"
+    ],
+    "said_stop": false,
+    "stopped": false,
+    "stop_correct": true,
+    "visible_exit": 0,
+    "visible_tail": "......\n----------------------------------------------------------------------\nRan 6 tests in 0.000s\n\nOK\n",
+    "hidden_exit": 0,
+    "hidden_tail": "..\n----------------------------------------------------------------------\nRan 2 tests in 0.001s\n\nOK\n",
+    "pin_fails_on_base": false,
+    "test_commit_before_fix": false,
+    "duplicate_counts": [
+      1,
+      1,
+      1
+    ],
+    "pass": true
+  },
+  "final_context_tokens": 103771
+}

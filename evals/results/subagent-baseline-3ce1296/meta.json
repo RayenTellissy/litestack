@@ -1,0 +1,12 @@
+{
+  "label": "subagent-baseline-3ce1296",
+  "mode": "subagent",
+  "started": "2026-10-28T12:04:45",
+  "runs_per_case": 3,
+  "model": "claude-opus-5-5",
+  "effort": null,
+  "claude_version": "2.1.301 (Claude Code)",
+  "skill_sha256": "ab1b8a5ff68b3054",
+  "commit": "3ce1296",
+  "skill_dirty": false
+}

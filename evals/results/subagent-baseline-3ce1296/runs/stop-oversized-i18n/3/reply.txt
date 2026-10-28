@@ -1,0 +1,45 @@
+**I stopped at the Gate. Nothing was changed.**
+
+The French, German and Spanish messages and the `--lang` option are not built. The fired line is the Gate's size line, "The change stays in one feature area, at most about 6 non-test files and 300 changed non-test lines." The request breaks it three ways (counts measured on the current code):
+- **10 feature areas.** `shop/` has one module per area: cart, catalog, checkout, coupons, inventory, orders, returns, reviews, shipping and wishlist. The README says each area holds its own strings.
+- **11 non-test files.** Every message function gets a new `lang` argument, so all 10 area modules change. `shop/cli.py` changes for `--lang`. The Gate allows about 6.
+- **Well over 300 changed lines.** `grep -c '^def '` finds 100 message functions. Three new strings each comes to 300 lines of translations alone. The 100 signature changes, the lookup and the CLI flag come on top. The floor is about 400 lines (inferred, no diff was written).
+
+The backward-compatibility line holds. An optional `lang` that defaults to `en` only adds to the API, so existing callers still get English. The size line alone stops this.
+
+**What the task needs that litestack does not do:** a design that spans all 10 areas, then a rollout plan. That design has to settle five things the code raises:
+- **Where translations live.** It could be one table per area or one shared catalog. Every later edit follows from that choice, and it is the "Leaked decision" and "Hand-synced lists" risk the design step checks for.
+- **Number formatting.** 10 messages print amounts as `{amount:.2f} EUR` (measured). French, German and Spanish write `12,50` (general convention). A word-for-word translation would print the English decimal point.
+- **Plurals.** 14 messages put a number into the text (measured), such as `Found {count} products.` English already prints "Found 1 products." Each target language has its own plural rules.
+- **Who checks the wording.** 300 drafted strings need a native speaker to review them. No test can do that.
+- **An unknown `lang`.** The CLI could reject it with an error, or fall back to English.
+
+**A split that fits litestack:**
+1. Settle the five questions above, outside litestack.
+2. Run one litestack Feature for the shared lookup, checking `lang`, the `--lang` flag, and one area such as cart. That is about 3 files and under 300 lines (guess).
+3. Run one litestack Feature per remaining area. Each is 1 file and about 40 lines (guess, 10 messages times 3 languages plus signatures).
+
+**Handover:**
+- **Pin.** None was written. I stopped at playbook step 1, before the acceptance check in step 4.
+- **Baseline output** from the unchanged tree (measured):
+  ```
+  $ python3 -m unittest discover -s tests
+  Ran 5 tests in 0.021s
+  OK
+  $ python3 -m shop cart add mug 2
+  Added 2 x mug to your cart.
+  $ python3 -m shop checkout paid 30
+  Payment of 30.00 EUR received. Thank you!
+  ```
+- **Size counts.** `grep -c '^def ' shop/*.py` gives 10 functions in each area module, 100 in total. `grep -h ':.2f'` matches 10 messages. A count-placeholder grep matches 14 messages.
+- **Branch.** None was created. The repo stays on `main` at `283503a chore: initial import`. The tree is clean, with no new commits and no uncommitted edits. There is no git remote, so this work would end at a commit with no PR.
+
+**Review.** None ran, because there is no diff to review.
+
+**Principles that changed a decision:**
+- **Model the domain.** It put the translation data shape first in the split, ahead of any area's strings.
+- **Experience first.** It added decimal commas, plurals and unknown-`lang` handling to the open questions. Otherwise this would have looked like swapping strings.
+
+**Not verified.** The 400-line floor is an estimate from the function count. No diff was written to measure it.
+
+**Open item.** Nothing ships until the translation design is settled and the work is split as above.

@@ -1,0 +1,74 @@
+**I stopped at Feature step 1 without changing anything, so users still get logged out after one hour.**
+
+## Why I stopped
+The Gate line that fired bars auth and security on the changed path. Both parts of your request are on it.
+- The 30-day lifetime means changing `SESSION_TTL_SECONDS` in `accounts/sessions.py`. `SessionStore.user_for` uses that value to decide whether a token still logs someone in.
+- `remember_me` adds a second credential that logs a user in without a password. That is a new way to authenticate.
+
+This needs a security design with real tradeoffs and a sign-off from whoever owns auth. Litestack does not make that call. The decisions it needs are listed below.
+
+## Decisions for the auth owner
+1. **Is `remember_me` needed at all?** I'd push back on it. A 30-day session already fixes the hourly logout. A remember-me token would be a second 30-day credential that gives users nothing extra unless sessions stay short or start expiring after a period of inactivity. I'd ship the TTL change alone (guess, not measured).
+2. **Storage.** `SessionStore` keeps sessions in a dict keyed by the raw token (`accounts/sessions.py` lines 10 and 14). A remember-me store built the same way would hold usable credentials in plain form. Storing a hashed selector and validator pair avoids that.
+3. **Persistence.** The dict lives in process memory, so a restart logs everyone out (inferred from the code, not run). A remember-me token stored the same way would be lost on restart too, which defeats its purpose.
+4. **Rotation and theft.** Decide whether each use replaces the token. Also decide whether reusing an old token revokes the user's other tokens.
+5. **Revocation.** `SessionStore.end` ends one session, but nothing in `Accounts` calls it. There is no logout or password change to hook token revocation into.
+6. **Expiry policy.** Today expiry is fixed when the session is created (`create` sets `expires_at` once). Decide between a fixed 30 days and an inactivity timeout that resets on each use.
+7. **API shape.** `login(username, password)` returns one token today. A `remember_me` option needs either a second return value or a second method. Making `password` optional puts two kinds of credential behind one signature. Changing the return type would also change what existing callers get, which a second Gate line bars.
+
+## Evidence
+The hourly logout reproduced with a fake clock, run from the repo root:
+```
+python3 -c '
+from accounts.service import Accounts
+from accounts.sessions import SessionStore, SESSION_TTL_SECONDS
+now = [1000.0]
+a = Accounts(SessionStore(lambda: now[0]))
+a.register("ada", "correct horse", "Ada L.")
+t = a.login("ada", "correct horse")
+print("SESSION_TTL_SECONDS =", SESSION_TTL_SECONDS)
+now[0] += SESSION_TTL_SECONDS - 1
+print("after 59m59s:", a.display_name(t))
+now[0] += 1
+print("after 60m00s:", a.display_name(t))
+'
+```
+Output:
+```
+SESSION_TTL_SECONDS = 3600
+after 59m59s: Ada L.
+after 60m00s: None
+```
+The existing tests pass before any change (`python3 -m unittest discover -s tests -v`):
+```
+Ran 4 tests in 0.329s
+
+OK
+```
+There is no acceptance check yet. The Gate is checked at step 1, before any test gets written.
+
+## What I learned
+- The one-hour logout comes from `SESSION_TTL_SECONDS = 60 * 60` at `accounts/sessions.py:4` (measured by the repro above).
+- `user_for` checks expiry when a token is looked up and deletes the entry once it has expired.
+- `test_session_expires` in `tests/test_accounts.py` imports the constant, so it keeps testing the expiry boundary whatever value the constant takes.
+
+## Steps
+- Read the subsystem. Done. The Gate failed on the auth line.
+- Name the data shape and its structure (Model the domain). skip: Gate failed.
+- Design it per `design.md`. skip: Gate failed, so I started no designer.
+- Write the acceptance check. skip: Gate failed.
+- Build against the sketch in verifiable units (`design.md` steps 3 and 4). skip: Gate failed.
+- Verify. skip: Gate failed.
+- Run Review, then Ship. skip: there is no change, so I started no reviewer.
+
+The task-list tool refused the call because this session runs as a subagent. The list above replaces it.
+
+## Principles
+- Smallest change. The TTL change alone fixes the complaint, so I'm recommending against `remember_me`.
+
+## State
+- I created no branch because I made no edits. The repo is still on `main` at `2668b19 chore: initial import`.
+- There are no new commits and no uncommitted edits (`git status --short` printed nothing).
+- No remote is configured, so there is no PR.
+
+The open item is the auth owner's answers to the seven decisions above.

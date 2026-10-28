@@ -1,0 +1,54 @@
+{
+  "case": "bug-split-remainder",
+  "run": 3,
+  "kind": "bug",
+  "expect": "ship",
+  "mode": "subagent",
+  "workdir": "/private/tmp/claude-501/-Users-ryan-Desktop-repos-litestack--claude-worktrees-goofy-meninsky-bc0664/0eeffd90-541e-46a5-b3c9-9e9241f0172e/scratchpad/evalwork/litestack-eval-subagent-baseline-3ce1296-lmqt0m3c/bug-split-remainder-3/repo",
+  "base": "37c4e6c92fdb47e74c0edff2dbcb06f084cfa8d7",
+  "error": null,
+  "run_error": null,
+  "reply": "Splitting a bill no longer loses cents. `python3 -m tabsplit 100.00 alice bob carol` now prints `Total: $100.00`, and the leftover cent goes to the first person listed. The fix is two commits on `fix/split-remainder`. There is no PR because the repo has no remote.\n\n**What was broken.** Whenever the amount did not divide evenly, the receipt total came out short by up to one cent per person, minus one. $0.05 split three ways came to $0.03 (measured).\n\n**Root cause.** `allocate` in `tabsplit/money.py` gave every person `total_cents // parts` and threw away `total_cents % parts`. A probe confirmed `parse_amount(\"100.00\")` returns 10000 and `allocate(10000, 3)` returns `[3333, 3333, 3333]`, which loses 1 cent. Parsing, tip, and formatting were correct. `git log -L` shows the code has been like this since the first commit, so this is not a regression.\n\n**Fix.** `allocate` now uses `divmod` and gives one extra cent to each of the first `remainder` people:\n```python\nshare, remainder = divmod(total_cents, parts)\nreturn [share + 1] * remainder + [share] * (parts - remainder)\n```\n`split_even` is its only caller, and its output is unchanged for even splits.\n\n**Verification.** Before the fix:\n```\n$ python3 -m tabsplit 100.00 alice bob carol\nalice: $33.33\nbob: $33.33\ncarol: $33.33\nTotal: $99.99\n$ python3 -m tabsplit 0.05 alice bob carol\n...\nTotal: $0.03\n$ python3 -m tabsplit 80.00 alice bob carol --tip 15\n...\nTotal: $91.98\n```\nThe pin tests failed on commit 3a4de67 (41 subtest failures plus the receipt test):\n```\nAssertionError: 'alice: $33.33\\nbob: $33.33\\ncarol: $33.33\\nTotal: $99.99' != 'alice: $33.34\\nbob: $33.33\\ncarol: $33.33\\nTotal: $100.00'\nFAILED (failures=1)\n```\nAfter the fix:\n```\n$ python3 -m tabsplit 100.00 alice bob carol\nalice: $33.34\nbob: $33.33\ncarol: $33.33\nTotal: $100.00\n$ python3 -m tabsplit 0.05 alice bob carol\nalice: $0.02\nbob: $0.02\ncarol: $0.01\nTotal: $0.05\n$ python3 -m tabsplit 80.00 alice bob carol --tip 15\nalice: $30.67\nbob: $30.67\ncarol: $30.66\nTotal: $92.00\n$ python3 -m tabsplit 90.00 alice bob carol\n... Total: $90.00   (even split unchanged)\n$ python3 -m tabsplit 80.00 alice bob --tip 15\n... Total: $92.00   (tip rounding unchanged)\n$ python3 -m unittest discover -s tests\nRan 11 tests in 0.001s\nOK\n```\n\n**Review.** One fresh reviewer reran every check and got the same results. It raised one finding, and I dismissed it.\n- Dismissed. A repeated name still loses money. `python3 -m tabsplit 100.00 alice alice bob` prints `Total: $66.66` because `split_even` builds a dict keyed by name. The reviewer called this design-level. I dismissed it because it is in `bill.py`, which this change did not touch, and the change does not make it worse. I measured `Total: $66.66` on both main and HEAD. It is listed below as an open item.\n\n**Principles that changed a decision.**\n- Fix root causes. I fixed `allocate`, where the cents are first lost. I did not make `receipt` print the amount entered in place of the sum of the shares, because that would hide shares that do not add up.\n- Test behavior. The `allocate` test checks the sum, the count, and the spread across totals from -101 to 10001 and 1 to 7 people. It does not check an exact list, so it keeps passing if the order of the extra cents changes. The receipt test pins the output users see.\n- Smallest change. I left the repeated-name bug out of this fix. It has a different cause and needs a product decision.\n- Verifiable units. The failing tests are committed before the fix.\n\n**Not verified.**\n- There is no lint or type checker in the repo, and pyflakes is not installed. Only `python3 -m compileall` ran.\n- The task-list tool refused the call because this session runs as a subagent. I tracked the playbook steps without it.\n\n**Gate.** I read the \"payments\" line as covering money movement. This tool only does arithmetic on a bill, so I went ahead.\n\n**Branch and commits.** `fix/split-remainder` off `main`, with no uncommitted edits.\n- `3a4de67` test(money): pin that split shares add up to the amount\n- `47b20ad` fix(money): hand the leftover cents out in allocate\n\n**Open items.**\n- Who gets the extra cent is a product call. I gave it to the people listed first.\n- A repeated name, like `alice alice bob`, still prints a short total. Fixing it means either rejecting repeated names or printing one line per position. Both change what the CLI does, so I left it for you to choose.",
+  "skill_invoked": true,
+  "wall_seconds": 211.3,
+  "tokens": {
+    "inputTokens": 48,
+    "cacheCreationInputTokens": 112275,
+    "cacheReadInputTokens": 1462124,
+    "outputTokens": 18589
+  },
+  "tool_uses": 19,
+  "subagents": {
+    "litestack-reviewer": 1
+  },
+  "grade": {
+    "tree": "/private/tmp/claude-501/-Users-ryan-Desktop-repos-litestack--claude-worktrees-goofy-meninsky-bc0664/0eeffd90-541e-46a5-b3c9-9e9241f0172e/scratchpad/evalwork/litestack-eval-subagent-baseline-3ce1296-lmqt0m3c/bug-split-remainder-3/repo",
+    "commits": 2,
+    "commit_titles": [
+      "test(money): pin that split shares add up to the amount",
+      "fix(money): hand the leftover cents out in allocate"
+    ],
+    "source_files_changed": [
+      "tabsplit/money.py"
+    ],
+    "source_lines_added": 2,
+    "source_lines_deleted": 2,
+    "left_uncommitted": [],
+    "test_files_changed": [
+      "tests/test_bill.py",
+      "tests/test_money.py"
+    ],
+    "said_stop": false,
+    "stopped": false,
+    "stop_correct": true,
+    "visible_exit": 0,
+    "visible_tail": "...........\n----------------------------------------------------------------------\nRan 11 tests in 0.000s\n\nOK\n",
+    "hidden_exit": 0,
+    "hidden_tail": ".......\n----------------------------------------------------------------------\nRan 7 tests in 0.022s\n\nOK\n",
+    "pin_fails_on_base": true,
+    "test_commit_before_fix": true,
+    "duplicate_counts": [],
+    "pass": true
+  },
+  "final_context_tokens": 82224
+}

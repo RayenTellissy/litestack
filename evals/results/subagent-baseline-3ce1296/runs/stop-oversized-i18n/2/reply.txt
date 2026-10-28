@@ -1,0 +1,37 @@
+**Stopped at the Gate. Nothing was changed.**
+
+This task is too big for litestack. The Gate line that failed is "The change stays in one feature area, at most about 6 non-test files and 300 changed non-test lines." It fails on all three counts. I checked it against the code, not against the wording of the request.
+
+- **Areas.** The README says each module under `shop/` is its own area. The change touches all 10: cart, catalog, checkout, coupons, inventory, orders, returns, reviews, shipping and wishlist.
+- **Files.** At least 11 non-test files: the 10 message modules plus `shop/cli.py`. That is measured.
+- **Lines.** Each of the 10 modules has 10 message functions, so there are 100 to translate. That is measured with `grep -c '^def '`. Three languages for each one means 300 new translated strings. Adding `lang` to every signature changes 100 more lines. So any design changes at least about 400 non-test lines before the CLI work (inferred, assuming one line per string and one per signature).
+
+The other Gate lines hold. An optional `lang` that defaults to `en`, plus a new `--lang` flag, only adds behavior, so existing callers keep getting English.
+
+**What the task needs that litestack does not do:** a plan that splits the work into area-sized changes. Here is a split where each part fits the Gate:
+1. The shared piece and one area together: the language type, its check at the CLI, `--lang`, and the cart translations. That is about 4 files and well under 300 lines.
+2. Each of the other 9 areas as its own change, using the shape from part 1.
+
+**Decisions the plan should settle first:**
+- Amounts are written as `{amount:.2f} EUR`. French, German and Spanish use a decimal comma ("12,50 EUR"). Translating the words but keeping "12.50" would look wrong to those readers. This is a product decision about number formatting, not just about wording.
+- Machine translations of 300 strings need a native-speaker review before they ship.
+
+**Pin and baseline:** I wrote no pin. Feature writes its acceptance check in step 4, and the Gate failed in step 1. Baseline output, run from the repository root:
+```
+$ python3 -m unittest discover -s tests
+Ran 5 tests in 0.038s
+OK
+$ python3 -m shop cart add mug 2
+Added 2 x mug to your cart.
+$ python3 -m shop --lang fr cart add mug 2
+shop: error: argument area: invalid choice: 'fr' (choose from 'cart', 'catalog', ...)
+exit=2
+```
+
+**Principles:** none changed a decision. The Gate decided the outcome before design began.
+
+**Not verified:** nothing was built, so there is nothing to check.
+
+**Branch state:** still on `main` at `3fff33c chore: initial import`. I made no branch, no commits and no edits, and the working tree is clean. There is no PR.
+
+**Open item:** whether to run part 1 (shared piece, `--lang` and cart) as the first litestack change.

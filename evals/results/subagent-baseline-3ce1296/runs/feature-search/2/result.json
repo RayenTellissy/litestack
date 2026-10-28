@@ -1,0 +1,55 @@
+{
+  "case": "feature-search",
+  "run": 2,
+  "kind": "feature",
+  "expect": "ship",
+  "mode": "subagent",
+  "workdir": "/private/tmp/claude-501/-Users-ryan-Desktop-repos-litestack--claude-worktrees-goofy-meninsky-bc0664/0eeffd90-541e-46a5-b3c9-9e9241f0172e/scratchpad/evalwork/litestack-eval-subagent-baseline-3ce1296-lmqt0m3c/feature-search-2/repo",
+  "base": "fecf487c3ee7f4a0827c7f9bfa9c29d8d13fe247",
+  "error": null,
+  "run_error": null,
+  "reply": "I added `python3 -m tasks search <text>` on branch `feat/search-command`. There is no PR because the repository has no remote. All 9 tests pass and I checked the real CLI by running it.\n\n**What you can now do**\n- `search <text>` lists the open tasks whose title contains the text, ignoring case. Each one prints as the same line `list` prints, tags included.\n- `--all` also shows done tasks. It works before or after the text.\n- When nothing matches, it prints `No matching tasks.` and exits 1.\n- Tags are not searched. `search home` does not find a task tagged `#home`.\n- The README gains one usage line.\n\n**Shape**\n- Nothing new is stored, and the JSON format does not change.\n- The \"hide done unless `--all`\" rule now lives in one helper, `shown_tasks(include_done)`. `list` and `search` both use it, so the two cannot drift apart.\n- `cmd_search` then keeps the tasks whose title contains the text. It uses `casefold()` on both sides, which also handles Unicode such as \"Stra\u00dfe\" and \"STRASSE\".\n- `add`, `list` and `done` behave as before. The four existing tests still pass, and the reviewer compared old and new output for the same commands and got identical results.\n\n**Acceptance check**\n- Five subprocess tests in `tests/test_cli.py` cover a mixed-case match with tags, done tasks hidden and then shown with `--all`, no match, the only match being a done task, and a tag-only match.\n- Before the feature they failed as expected: `FAILED (failures=5)`, with argparse exiting 2 because `search` was an invalid choice.\n- After the feature: `Ran 5 tests ... OK`. The full suite gives `Ran 9 tests in 0.914s OK`, and `py_compile` exits 0.\n- A script runs the real CLI against a temporary task file. Its output shows the no-match case exits 1 with empty stdout and `No matching tasks.` on stderr.\n\n**Decision for you**\n- `No matching tasks.` goes to stderr. Your request says only \"prints\". I matched the codebase's only other exit-1 message, `done` with an unknown id, which also goes to stderr. If you want it on stdout like `list`'s `No tasks.`, it is a one-line change in the code and in two tests.\n\n**Smaller choices I made**\n- An empty search text lists every shown task.\n- A search for several words needs quotes, like `add`'s title.\n- `search` has no `--tag` option, since you didn't ask for one.\n\n**Review**\n- Fixed: the tests did not prove that matching uses the title only. Code that matched the whole printed line would have passed. I added `test_search_ignores_tags` and folded it into the test commit, which still fails without the feature.\n- Dismissed as a code change: the reviewer flagged the stderr choice. It is a defensible product call, so it is the decision for you above.\n- The fix changed only test lines, so no second review was needed.\n\n**Principles that changed a decision**\n- **Design it as if it was always there:** the done-task rule moved into `shown_tasks` instead of being copied into `search`.\n- **Smallest change:** no `--tag` on search and no `Task.matches` method. The helper also did not get its own refactor commit, because alone it would have only one caller.\n- **Experience first:** `casefold()` instead of `lower()`, and stderr for the no-match message.\n- **Verifiable units:** the failing tests were committed before the feature.\n\n**What I could not verify**\n- The project has no linter or type checker, and pyflakes is not installed. The only static check is `py_compile`.\n- Everything ran on Python 3.9.6 only.\n\n**Process notes**\n- The task-list tool refused me because this run is a subagent, so I tracked the playbook steps myself.\n- I first saved one evidence file one level above the repo, which broke the work-only-in-repo rule. I moved it into `.git/` and deleted the outside folder.\n\n**Branch:** `feat/search-command`, nothing uncommitted.\n- `2f00465 test(cli): pin the search command`\n- `c0ae961 feat(cli): add the search command`\n\nEvidence is in `/private/tmp/claude-501/-Users-ryan-Desktop-repos-litestack--claude-worktrees-goofy-meninsky-bc0664/0eeffd90-541e-46a5-b3c9-9e9241f0172e/scratchpad/evalwork/litestack-eval-subagent-baseline-3ce1296-lmqt0m3c/feature-search-2/repo/.git/litestack-evidence/`:\n- `pin-before.txt`\n- `pin-after.txt`\n- `drive.sh`\n- `drive.txt`",
+  "skill_invoked": true,
+  "wall_seconds": 445.1,
+  "tokens": {
+    "inputTokens": 68,
+    "cacheCreationInputTokens": 167054,
+    "cacheReadInputTokens": 2183107,
+    "outputTokens": 39835
+  },
+  "tool_uses": 28,
+  "subagents": {
+    "litestack-designer": 1,
+    "litestack-reviewer": 1
+  },
+  "grade": {
+    "tree": "/private/tmp/claude-501/-Users-ryan-Desktop-repos-litestack--claude-worktrees-goofy-meninsky-bc0664/0eeffd90-541e-46a5-b3c9-9e9241f0172e/scratchpad/evalwork/litestack-eval-subagent-baseline-3ce1296-lmqt0m3c/feature-search-2/repo",
+    "commits": 2,
+    "commit_titles": [
+      "test(cli): pin the search command",
+      "feat(cli): add the search command"
+    ],
+    "source_files_changed": [
+      "README.md",
+      "tasks/cli.py"
+    ],
+    "source_lines_added": 22,
+    "source_lines_deleted": 1,
+    "left_uncommitted": [],
+    "test_files_changed": [
+      "tests/test_cli.py"
+    ],
+    "said_stop": false,
+    "stopped": false,
+    "stop_correct": true,
+    "visible_exit": 0,
+    "visible_tail": ".........\n----------------------------------------------------------------------\nRan 9 tests in 1.149s\n\nOK\n",
+    "hidden_exit": 1,
+    "hidden_tail": ".F..F.\n======================================================================\nFAIL: test_done_tasks_hidden_by_default (test_hidden_search.SearchAcceptanceTest)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/Users/ryan/Desktop/repos/litestack/.claude/worktrees/goofy-meninsky-bc0664/evals/cases/feature-search/hidden/test_hidden_search.py\", line 38, in test_done_tasks_hidden_by_default\n    self.assertEqual(result.stdout, \"No matching tasks.\\n\")\nAssertionError: '' != 'No matching tasks.\\n'\n+ No matching tasks.\n\n\n======================================================================\nFAIL: test_no_match (test_hidden_search.SearchAcceptanceTest)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/Users/ryan/Desktop/repos/litestack/.claude/worktrees/goofy-meninsky-bc0664/evals/cases/feature-search/hidden/test_hidden_search.py\", line 48, in test_no_match\n    self.assertEqual(result.stdout, \"No matching tasks.\\n\")\nAssertionError: '' != 'No matching tasks.\\n'\n+ No matching tasks.\n\n\n----------------------------------------------------------------------\nRan 6 tests in 1.460s\n\nFAILED (failures=2)\n",
+    "pin_fails_on_base": true,
+    "test_commit_before_fix": true,
+    "duplicate_counts": [],
+    "pass": false
+  },
+  "final_context_tokens": 99598
+}

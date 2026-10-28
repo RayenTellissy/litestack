@@ -1,0 +1,66 @@
+## What you can do now
+
+`python3 -m tasks search <text>` lists the open tasks whose title contains `<text>`, ignoring case. The output format matches `list`. `--all` adds done tasks, and it works before or after the text. When nothing matches it prints `No matching tasks.` and exits 1. It matches titles only, not tags. It never writes `tasks.json` (measured, the file's hash is the same before and after every search in the drive run). The README now has two `search` examples. The existing commands behave as before (measured, the 4 existing tests pass).
+
+## Shape
+
+No new data. A search is a filter over the stored `Task` list in stored order. First it applies the same open-or-`--all` rule `list` uses, then a `casefold()` substring test on the title. Each match prints through `Task.line()`, so the format cannot drift from `list`. The visibility rule moved into one function, `visible(tasks, include_done)` in `tasks/cli.py`, and `cmd_list` and the new `cmd_search` both call it. Without that, the done-visibility rule would sit in two places. The change spans 3 files and adds 46 lines (22 in `tasks/cli.py`).
+
+## Acceptance check
+
+I added three tests to `tests/test_cli.py`. They cover a case-insensitive match across two tasks in stored order, done tasks hidden unless `--all`, and the no-match case (stdout `No matching tasks.`, exit 1, searching for a word that is only a tag).
+
+Before the feature, all 3 failed because argparse rejected the unknown subcommand with exit 2. The 4 existing tests passed:
+```
+AssertionError: 2 != 0
+AssertionError: 2 != 1
+AssertionError: '' != '[ ] 2 Buy bread\n'
+Ran 7 tests in 0.773s
+FAILED (failures=3)
+```
+After the feature:
+```
+Ran 7 tests in 0.746s
+OK
+```
+I ran the real CLI with `/private/tmp/claude-501/-Users-ryan-Desktop-repos-litestack--claude-worktrees-goofy-meninsky-bc0664/0eeffd90-541e-46a5-b3c9-9e9241f0172e/scratchpad/evalwork/litestack-eval-subagent-baseline-3ce1296-lmqt0m3c/feature-search-1/repo/.git/litestack/drive.sh`. Its output is saved in `/private/tmp/claude-501/-Users-ryan-Desktop-repos-litestack--claude-worktrees-goofy-meninsky-bc0664/0eeffd90-541e-46a5-b3c9-9e9241f0172e/scratchpad/evalwork/litestack-eval-subagent-baseline-3ce1296-lmqt0m3c/feature-search-1/repo/.git/litestack/drive.out`. Results:
+- `search MILK` on a done task gives `No matching tasks.` and exit 1.
+- `search MILK --all` gives `[x] 1 Buy milk #home` and exit 0.
+- `search home` gives `No matching tasks.` and exit 1.
+- `tasks -h` lists `search`.
+- The `tasks.json` hash is unchanged.
+
+`py_compile` passes on all files.
+
+## Open decisions
+
+- `No matching tasks.` goes to stdout, like `list`'s `No tasks.`. It does not go to stderr like `done`'s `No task N.`.
+- Case matching uses `casefold()`, not `lower()`.
+- An empty query `search ""` lists every visible task and exits 0 (measured).
+- `search` has no `--tag` option, because the request did not ask for one.
+- The text is one positional argument, so a multi-word query needs quotes.
+
+## Review
+
+One fresh reviewer reran the tests, the compile check and the refactor pin. It reran the drive script and diffed the result against the saved output with no differences. It reported no findings. It could not check out the refactor commit, so it ran that commit's pin at the branch tip. I had already run the pin on that commit's exact code before committing it, and the 4 tests passed (measured). The reviewer also wrote a stray file outside the repo, `/private/tmp/claude-501/-Users-ryan-Desktop-repos-litestack--claude-worktrees-goofy-meninsky-bc0664/0eeffd90-541e-46a5-b3c9-9e9241f0172e/scratchpad/drive-rerun.out`. I left it alone because I was limited to working inside the repo. You can delete it.
+
+## Principles that changed a decision
+
+- **Design it as if it was always there.** The done-visibility rule got one home in `visible()`, instead of a copy inside `cmd_search`.
+- **Verifiable units.** The extraction shipped as its own refactor commit, checked by the existing tests, before the feature commit.
+- **Test behavior.** The tests run the real CLI as a subprocess and check exact stdout and exit codes. The no-match test searches for a tag word to prove only titles are searched.
+- **Smallest change.** No `--tag` on search, no shared argparse parent for the two `--all` flags, and no type hints the file does not already use.
+- **Prove it works.** The drive script checks that search leaves `tasks.json` byte-identical.
+
+## Not verified
+
+- No linter or type checker is installed, so the only static check was `py_compile`.
+- Everything ran on Python 3.9.6 only.
+
+## Branch
+
+The work is on branch `feat/search-command`, in two commits on top of `fecf487`:
+- `984a9a2 refactor(cli): extract visible from cmd_list`
+- `f5af896 feat(cli): add search command`
+
+There is no PR because the repository has no remote. The tree is clean.

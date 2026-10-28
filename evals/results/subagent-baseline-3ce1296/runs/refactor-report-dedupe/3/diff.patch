@@ -1,0 +1,110 @@
+diff --git a/ledger/reports.py b/ledger/reports.py
+index 8dbd2ab..1ff8558 100644
+--- a/ledger/reports.py
++++ b/ledger/reports.py
+@@ -2,60 +2,35 @@ from .entries import Entry
+ 
+ 
+ def daily_summary(entries):
+-    groups = {}
+-    for entry in entries:
+-        key = entry.day.isoformat()
+-        groups.setdefault(key, []).append(entry)
+-    lines = []
+-    for key in sorted(groups):
+-        lines.append(f"== {key} ==")
+-        totals = {}
+-        for entry in groups[key]:
+-            totals[entry.category] = totals.get(entry.category, 0.0) + entry.amount
+-        for category in sorted(totals):
+-            lines.append(f"{category:<16}{totals[category]:>10.2f}")
+-        lines.append(f"{'total':<16}{sum(totals.values()):>10.2f}")
+-    if not lines:
+-        return "No entries."
+-    return "\n".join(lines)
++    return _summary(entries, lambda day: day.isoformat())
+ 
+ 
+ def weekly_summary(entries):
+-    groups = {}
+-    for entry in entries:
+-        year, week, _ = entry.day.isocalendar()
+-        key = f"{year}-W{week:02d}"
+-        groups.setdefault(key, []).append(entry)
+-    lines = []
+-    for key in sorted(groups):
+-        lines.append(f"== {key} ==")
+-        totals = {}
+-        for entry in groups[key]:
+-            totals[entry.category] = totals.get(entry.category, 0.0) + entry.amount
+-        for category in sorted(totals):
+-            lines.append(f"{category:<16}{totals[category]:>10.2f}")
+-        lines.append(f"{'total':<16}{sum(totals.values()):>10.2f}")
+-    if not lines:
+-        return "No entries."
+-    return "\n".join(lines)
++    def iso_week(day):
++        year, week, _ = day.isocalendar()
++        return f"{year}-W{week:02d}"
++
++    return _summary(entries, iso_week)
+ 
+ 
+ def monthly_summary(entries):
+-    groups = {}
++    return _summary(entries, lambda day: f"{day.year}-{day.month:02d}")
++
++
++def _summary(entries, period_of):
++    totals_by_period = {}
+     for entry in entries:
+-        key = f"{entry.day.year}-{entry.day.month:02d}"
+-        groups.setdefault(key, []).append(entry)
+-    lines = []
+-    for key in sorted(groups):
+-        lines.append(f"== {key} ==")
+-        totals = {}
+-        for entry in groups[key]:
+-            totals[entry.category] = totals.get(entry.category, 0.0) + entry.amount
+-        for category in sorted(totals):
+-            lines.append(f"{category:<16}{totals[category]:>10.2f}")
+-        lines.append(f"{'total':<16}{sum(totals.values()):>10.2f}")
+-    if not lines:
++        totals = totals_by_period.setdefault(period_of(entry.day), {})
++        totals[entry.category] = totals.get(entry.category, 0.0) + entry.amount
++    if not totals_by_period:
+         return "No entries."
++    lines = []
++    for period in sorted(totals_by_period):
++        totals = totals_by_period[period]
++        lines.append(f"== {period} ==")
++        rows = [(category, totals[category]) for category in sorted(totals)]
++        rows.append(("total", sum(totals.values())))
++        lines += [f"{label:<16}{value:>10.2f}" for label, value in rows]
+     return "\n".join(lines)
+ 
+ 
+diff --git a/tests/test_reports.py b/tests/test_reports.py
+index 167396e..8457e93 100644
+--- a/tests/test_reports.py
++++ b/tests/test_reports.py
+@@ -54,6 +54,19 @@ class ReportsTest(unittest.TestCase):
+     def test_empty(self):
+         self.assertEqual(daily_summary([]), "No entries.")
+ 
++    def test_total_sums_in_first_seen_category_order(self):
++        entries = [
++            Entry(date(2026, 3, 2), "z", 1e16),
++            Entry(date(2026, 3, 2), "a", 1.0),
++            Entry(date(2026, 3, 2), "m", -1e16),
++            Entry(date(2026, 3, 2), "b", 0.49),
++        ]
++        self.assertEqual(
++            daily_summary(entries).splitlines()[-1],
++            "total                 0.49",
++            "summing in sorted category order rounds differently",
++        )
++
+     def test_parse_line(self):
+         self.assertEqual(parse_line("2026-03-02, food, 12.5"), ENTRIES[0])
+ 
