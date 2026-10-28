@@ -131,6 +131,15 @@ def run_claude(case, repo, out, opts):
     return {"wall_seconds": round(time.monotonic() - start, 1), "timed_out": timed_out, "exit_code": proc.returncode}
 
 
+def agent_name(call):
+    """The skill's fallback spawns general-purpose with a brief that names the agent file."""
+    name = call.get("subagent_type") or "general-purpose"
+    for kind in ("litestack-designer", "litestack-reviewer"):
+        if name == "general-purpose" and f"agents/{kind}.md" in str(call.get("prompt", "")):
+            return kind
+    return name
+
+
 def parse_transcript(path, skill_marker):
     init, result, agents = {}, {}, []
     raw = path.read_text() if path.exists() else ""
@@ -146,7 +155,7 @@ def parse_transcript(path, skill_marker):
         elif event.get("type") == "assistant":
             for block in event.get("message", {}).get("content") or []:
                 if isinstance(block, dict) and block.get("type") == "tool_use" and block.get("name") in ("Agent", "Task"):
-                    agents.append(block.get("input", {}).get("subagent_type") or "general-purpose")
+                    agents.append(agent_name(block.get("input") or {}))
     tokens = {}
     for usage in (result.get("modelUsage") or {}).values():
         for key, value in usage.items():
@@ -323,19 +332,59 @@ def safe_run(case, index, out_root, work_root, opts, abort):
                 "error": f"runner: {exc!r}"}
 
 
-def cmd_run(opts):
-    cases = load_cases(opts.case)
+def start_results(opts, mode):
     label = opts.label or datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     out_root = RESULTS / label
     if out_root.exists():
         sys.exit(f"{out_root} exists; pick another --label")
-    work_root = Path(tempfile.mkdtemp(prefix=f"litestack-eval-{label}-"))
-    meta = {"label": label, "started": datetime.datetime.now().isoformat(timespec="seconds"),
-            "runs_per_case": opts.runs, "model": opts.model, "effort": opts.effort,
+    parent = Path(opts.workdir) if getattr(opts, "workdir", None) else None
+    if parent:
+        parent.mkdir(parents=True, exist_ok=True)
+    work_root = Path(tempfile.mkdtemp(prefix=f"litestack-eval-{label}-", dir=parent))
+    meta = {"label": label, "mode": mode, "started": datetime.datetime.now().isoformat(timespec="seconds"),
+            "runs_per_case": opts.runs, "model": opts.model, "effort": getattr(opts, "effort", None),
             "claude_version": subprocess.run(["claude", "--version"], capture_output=True, text=True).stdout.strip(),
             **skill_version()}
     out_root.mkdir(parents=True)
     (out_root / "meta.json").write_text(json.dumps(meta, indent=2))
+    return out_root, work_root, meta
+
+
+BRIEF = """You are a fresh Claude Code session. The user typed this command in the repository at {repo}:
+
+/litestack {task}
+
+Run it. Read `{repo}/.claude/skills/litestack/SKILL.md` in full and follow it exactly, as if the user had invoked the skill. Its other files are next to it in `{repo}/.claude/skills/litestack/`.
+
+Rules for this environment:
+- Work only inside {repo}. Run every command from there. Never read or search outside it.
+- The litestack-designer and litestack-reviewer agent types in this session may be an older install. For each, use `subagent_type: "general-purpose"` and open its brief with "Read `{repo}/.claude/agents/<type>.md` in full and follow it. Edit nothing." Keep the skill's other subagent rules.
+- Nobody will answer questions. Decide as the skill says, and Stop where it says to Stop.
+- Your final message is the skill's reply to the user.
+"""
+
+
+def cmd_prepare(opts):
+    """Set up workdirs for runs that a Claude Code session drives with helper agents."""
+    cases = load_cases(opts.case)
+    out_root, work_root, _ = start_results(opts, "subagent")
+    for i in range(1, opts.runs + 1):
+        for case in cases:
+            out = out_root / "runs" / case["name"] / str(i)
+            out.mkdir(parents=True)
+            repo = work_root / f"{case['name']}-{i}" / "repo"
+            base = setup(case, repo)
+            record = {"case": case["name"], "run": i, "kind": case["kind"], "expect": case["expect"],
+                      "mode": "subagent", "workdir": str(repo), "base": base, "error": None, "run_error": None}
+            (out / "result.json").write_text(json.dumps(record, indent=2))
+            (out / "brief.md").write_text(BRIEF.format(repo=repo, task=case["task"]))
+            print(out)
+
+
+def cmd_run(opts):
+    cases = load_cases(opts.case)
+    out_root, work_root, meta = start_results(opts, "cli")
+    label = meta["label"]
     abort = threading.Event()
     jobs = [(case, i) for i in range(1, opts.runs + 1) for case in cases]
     with ThreadPoolExecutor(max_workers=opts.jobs) as pool:
@@ -386,7 +435,8 @@ def summarize_case(name, records):
         "wall_median_s": median([r["wall_seconds"] for r in graded]),
         "cost_mean_usd": mean([r.get("cost_usd") for r in graded]),
         "output_tokens_median": median([r["tokens"].get("outputTokens") for r in graded]),
-        "input_tokens_median": median([sum(r["tokens"].get(k, 0) for k in ("inputTokens", "cacheReadInputTokens", "cacheCreationInputTokens")) for r in graded]),
+        "total_tokens_median": median([r["tokens"].get("totalTokens") or sum(r["tokens"].get(k, 0) for k in (
+            "inputTokens", "outputTokens", "cacheReadInputTokens", "cacheCreationInputTokens")) or None for r in graded]),
         "designer_spawns_mean": mean(designer),
         "reviewer_spawns_mean": mean(reviewer),
     }
@@ -410,9 +460,9 @@ def write_summary(out_root, records=None):
     summary = {"meta": meta, "total": total, "cases": rows}
     (out_root / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
     cols = ["case", "pass", "stop_correct", "hidden_pass", "pin_fails_on_base", "commits_median",
-            "wall_median_s", "cost_mean_usd", "output_tokens_median", "designer_spawns_mean", "reviewer_spawns_mean", "errors"]
+            "wall_median_s", "cost_mean_usd", "total_tokens_median", "designer_spawns_mean", "reviewer_spawns_mean", "errors"]
     lines = [f"# {meta['label']}", "",
-             f"Skill {meta['skill_sha256']} at {meta['commit']}{' (dirty)' if meta['skill_dirty'] else ''}, "
+             f"Mode {meta.get('mode', 'cli')}. Skill {meta['skill_sha256']} at {meta['commit']}{' (dirty)' if meta['skill_dirty'] else ''}, "
              f"{meta['claude_version']}, model {meta.get('model') or 'default'}, {meta['runs_per_case']} runs per case.", "",
              f"Total pass {total['pass']}, errors {total['errors']}, cost ${total['cost_total_usd']}, "
              f"median wall {total['wall_median_s'] if total['wall_median_s'] is not None else '-'}s.", "",
@@ -422,15 +472,28 @@ def write_summary(out_root, records=None):
     print("\n".join(lines))
 
 
-def cmd_regrade(opts):
+def cmd_grade(opts):
     out_root = RESULTS / opts.label
     cases = {c["name"]: c for c in load_cases()}
     records = []
     for path in sorted((out_root / "runs").glob("*/*/result.json")):
         record = json.loads(path.read_text())
+        reply, usage = path.parent / "reply.txt", path.parent / "usage.json"
+        if reply.exists():
+            record["reply"] = reply.read_text()
+            record["skill_invoked"] = True
+        if usage.exists():
+            u = json.loads(usage.read_text())
+            record["wall_seconds"] = round(u["duration_ms"] / 1000, 1)
+            record["tokens"] = {"totalTokens": u["subagent_tokens"]}
+            record["tool_uses"] = u.get("tool_uses")
+        if (path.parent / "transcript.jsonl").exists() and record.get("mode") == "subagent":
+            record["subagents"] = parse_transcript(path.parent / "transcript.jsonl", "")["subagents"]
+        if record.get("mode") == "subagent" and not reply.exists():
+            record["error"] = "no reply recorded"
         if record.get("workdir") and Path(record["workdir"]).exists():
             repo = Path(record["workdir"])
-            base = git(repo, "rev-list", "--max-parents=0", "HEAD").split()[0]
+            base = record.get("base") or git(repo, "rev-list", "--max-parents=0", "HEAD").split()[0]
             record["grade"] = grade(cases[record["case"]], repo, base, record.get("reply", ""))
             path.write_text(json.dumps(record, indent=2))
         records.append(record)
@@ -440,7 +503,9 @@ def cmd_regrade(opts):
 def cmd_compare(opts):
     a, b = (json.loads((RESULTS / label / "summary.json").read_text()) for label in (opts.a, opts.b))
     print(f"A = {opts.a} (skill {a['meta']['skill_sha256']}), B = {opts.b} (skill {b['meta']['skill_sha256']})\n")
-    cols = ["pass", "stop_correct", "hidden_pass", "pin_fails_on_base", "wall_median_s", "cost_mean_usd", "output_tokens_median"]
+    if a["meta"].get("mode", "cli") != b["meta"].get("mode", "cli"):
+        print("Warning: A and B ran in different modes, so their numbers are not comparable.\n")
+    cols = ["pass", "stop_correct", "hidden_pass", "pin_fails_on_base", "wall_median_s", "cost_mean_usd", "total_tokens_median"]
     print("| case | " + " | ".join(f"{c} A → B" for c in cols) + " |")
     print("|---|" + "---|" * len(cols))
     rows_b = {row["case"]: row for row in b["cases"]}
@@ -504,9 +569,16 @@ def main():
     run.add_argument("--timeout-min", type=float, default=45, help="per-run timeout in minutes (default 45)")
     run.add_argument("--max-budget-usd", type=float, help="per-run spend cap passed to claude")
     run.set_defaults(func=cmd_run)
-    regrade = sub.add_parser("regrade", help="regrade a finished run from its kept workdirs")
-    regrade.add_argument("label")
-    regrade.set_defaults(func=cmd_regrade)
+    prepare = sub.add_parser("prepare", help="set up workdirs and briefs for helper-agent runs")
+    prepare.add_argument("--runs", type=int, default=3)
+    prepare.add_argument("--case", default="*")
+    prepare.add_argument("--label")
+    prepare.add_argument("--model", help="model the driving session uses, recorded only")
+    prepare.add_argument("--workdir", help="parent folder for the workdirs (default: system temp)")
+    prepare.set_defaults(func=cmd_prepare)
+    grade_cmd = sub.add_parser("grade", help="grade or regrade a run from its kept workdirs")
+    grade_cmd.add_argument("label")
+    grade_cmd.set_defaults(func=cmd_grade)
     compare = sub.add_parser("compare", help="compare two results folders")
     compare.add_argument("a")
     compare.add_argument("b")

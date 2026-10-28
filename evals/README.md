@@ -42,7 +42,26 @@ Useful `run` options are `--case 'stop-*'` to run a subset, `--runs 5` for more 
 
 Launch it from a plain terminal. Each run uses `--dangerously-skip-permissions` inside its throwaway copy, and Claude Code's auto mode refuses to start such a child from inside a session.
 
-`python3 evals/run.py regrade <label>` regrades a finished run from its kept workdirs after a grader change, with no model calls.
+`python3 evals/run.py grade <label>` regrades a finished run from its kept workdirs after a grader change, with no model calls.
+
+## Run it from a Claude Code session instead
+
+When the terminal `claude` cannot run, a Claude Code session can drive the same cases with helper agents, on the session's own account. Helper agents can start their own helpers, so the designer and reviewer still run.
+
+1. Set up the workdirs. Each printed run folder gets a `brief.md`.
+
+   ```bash
+   python3 evals/run.py prepare --label subagent-baseline-$(git rev-parse --short HEAD) --workdir <folder the session can write>
+   ```
+
+2. Ask the session to start one `general-purpose` agent per run folder, with that folder's `brief.md` as the prompt and no model override. When an agent finishes, the session saves its final message as `reply.txt`, its usage numbers as `usage.json` (`{"subagent_tokens": …, "tool_uses": …, "duration_ms": …}`), and its transcript as `transcript.jsonl`, all in that run folder.
+3. Grade it.
+
+   ```bash
+   python3 evals/run.py grade subagent-baseline-<commit>
+   ```
+
+This mode is close to real use but not identical. The skill is read from a brief instead of typed as `/litestack`, and the run inherits the driving session's settings. Cost is not reported, and tokens are one total. Compare a helper-agent run only with another helper-agent run. `compare` warns when the modes differ.
 
 ## What one run does
 
@@ -62,9 +81,10 @@ Each run writes `evals/results/<label>/runs/<case>/<n>/result.json` and `diff.pa
 | `hidden_pass` | Ship runs whose hidden tests passed. |
 | `pin_fails_on_base` | Bug and feature runs whose final test files fail against the original code, so the pin really catches the problem. |
 | `commits_median` | Commits on top of the base. |
-| `wall_median_s`, `cost_mean_usd`, `output_tokens_median` | Wall time from the runner, and cost and tokens from the CLI's final result event, subagents included. |
+| `wall_median_s`, `cost_mean_usd` | Wall time from the runner, and cost from the CLI's final result event, subagents included. |
 | `designer_spawns_mean`, `reviewer_spawns_mean` | How often the run spawned each litestack subagent. |
-| `errors` | Runs lost to auth, usage limits, or a crash. They are left out of every rate. A usage-limit or auth error stops the remaining runs. |
+| `total_tokens_median` | All tokens, subagents included. |
+| `errors` | Runs lost to auth, usage limits, a crash, or a helper-agent run with no saved reply. They are left out of every rate. A usage-limit or auth error stops the remaining runs. |
 
 Each `result.json` also keeps the final reply, the commit titles, `test_commit_before_fix`, `skill_invoked`, `permission_denials`, and the tails of the test output. A timeout or a max-turns ending counts as a failed run, not an error.
 
