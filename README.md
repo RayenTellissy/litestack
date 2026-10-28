@@ -65,7 +65,7 @@ Two settings help on your side.
 
 ## Gate
 
-Litestack takes a change in one feature area, at most about 6 files and 300 lines. Public API, schema, and format changes must be additive and backward compatible. It refuses concurrency, auth, permissions, security, payments, and data deletion. A bug qualifies when its mechanism turns up within about three passes. A design qualifies when one shape is clearly right from reading the code.
+Litestack takes a change in one feature area, at most about 6 non-test files and 300 changed non-test lines. Public API, schema, and format changes must be additive and backward compatible. It refuses concurrency, auth, permissions, security, payments, and data deletion. A bug qualifies when its mechanism turns up within about three passes. A design qualifies when one shape is clearly right from reading the code.
 
 When the task fails the gate or outgrows it midway, litestack stops and reports instead of pushing on. The report names the reason and hands over the pin and what it learned.
 
