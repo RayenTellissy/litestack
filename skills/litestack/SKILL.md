@@ -65,7 +65,7 @@ Speed comes from never waiting and never doing work twice, not from skipping pro
 
 Stop when the Gate fails, or when one of these fires.
 
-- The diff outgrows the Gate's size.
+- The diff breaks a Gate line, such as its size or what existing callers of a public name get.
 - A fix attempt fails, and the next one would rest on the same premise.
 - No shape is clearly right.
 - The build fights a second sketch too.
@@ -95,11 +95,11 @@ Spawn the reviewer per Subagents, and overlap it per Speed. The brief holds four
 
 Leave out your diagnosis, your design rationale, what you already checked, and each call you made where the request was silent. They anchor the reviewer, and it should find those calls on its own.
 
-The reviewer tries the request itself and returns a verdict. PASS means every request item behaves as asked. PASS+NOTES means the same, and the change settled details the request left open. FAIL means a request item does not behave as asked on the path the change built or fixed, or a finding is critical. A request item that fails the same way at the base, through code the change does not touch, is a note.
+The reviewer tries the request itself and returns a verdict. PASS means every request item behaves as asked. PASS+NOTES means the same, and the change settled details the request left open. FAIL means a request item does not behave as asked on the path the change built or fixed, or a finding is critical. A request item that fails the same way at the base, through code the change does not touch, is a note, unless it is the bug's repro or a command or call the request names.
 
 Triage each finding as Act on or Dismissed, with a one-line reason. Judge it against the code, not the reviewer's word.
 
-- A hypothetical bug is real only when a caller can reach it. Trace the call path before you decide.
+- A hypothetical bug is real only when a caller can reach it. Trace the call path before you decide. A compatibility finding on a public name is real with no caller in the repository, because code outside it can call that name.
 - "I would do it differently" without a concrete defect is Dismissed.
 - A new abstraction for one call site is Dismissed.
 - A finding about code the change did not touch is Dismissed, unless the change makes it worse.
@@ -125,4 +125,4 @@ This covers the reply, code comments, commit messages, and the PR. Write it clea
 
 ## Reply
 
-Give the playbook's reply parts in order, written per Writing. Then the review, with the reviewer's verdict, the findings you fixed, each dismissed finding with its reason, and the Needs your call list. Then name each principle that changed a decision and the choice it changed. Name anything you could not verify, and why. End with the PR link, or the branch and commit when there is no PR, and any stop or open item.
+Open with whether every request item now works. Name any that still fails first, with its input and what it prints. Then give the playbook's reply parts in order, written per Writing. Then the review, with the reviewer's verdict, the findings you fixed, each dismissed finding with its reason, and the Needs your call list. Then name each principle that changed a decision and the choice it changed. Name anything you could not verify, and why. End with the PR link, or the branch and commit when there is no PR, and any stop or open item.
