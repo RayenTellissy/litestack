@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Litestack
 
-Small changes, full rigor. You write all the code in this session, with no code-writing delegates, swarms, or review panels. The only helpers are read-only subagents: a designer for the design step, a reviewer, and, when search stalls, a search. A playbook gives the task its steps. The principles shape every decision. One fresh reviewer checks the result. Nothing ships without a pin that held and pasted output that shows it.
+Small changes, full rigor. You write all the code in this session, with no code-writing delegates, swarms, or review panels. The only helpers are read-only subagents: a designer for the design step, a reviewer, and, when search stalls, a search. A playbook gives the task its steps. The principles shape every decision. One fresh reviewer checks the result against the user's request. Nothing ships without a pin that held and pasted output that shows it.
 
 The files named here live next to this one, in `${CLAUDE_SKILL_DIR}`. Read them by path.
 
@@ -41,9 +41,9 @@ Litestack fits only when every line holds. Judge it against the code you read in
 ## Rules
 
 - Any code. Name the data shape first, and pick its structure (Model the domain).
-- A "which approach" question. If running something can answer it (behavior, output, layout, timing), run it instead of asking. For a product or preference call, take the option closest to existing behavior, act on it, and report it as an open decision. Ask first only when nothing existing suggests a default and a wrong guess would be costly to undo.
+- A "which approach" question. If running something can answer it (behavior, output, layout, timing), run it instead of asking. For a product or preference call, when the request names something to match, such as "the same format as `list`", every detail the request leaves open follows that thing. Otherwise take the option closest to existing behavior. Act on it, and report it as an open decision. Ask first only when nothing existing suggests a default and a wrong guess would be costly to undo.
 - A UI, CLI, or TUI change. Drive the real surface. If the project has a verification skill at `.claude/skills/verify-*/SKILL.md`, read it and the file in its `features/` folder for the touched feature. Follow its launch, drive, evidence, and cleanup steps, and cover every entry point the feature file lists. If one of its steps breaks for a reason unrelated to the change, drive the surface directly and report the broken step. Without one, use a browser tool for web and Electron, Bash for a CLI, and `expect` or `script` for a TUI.
-- Every check. Keep its output verbatim. An inconclusive or wrong-surface result is a fail. Fix it or Stop.
+- Every check. Keep its output verbatim. An inconclusive or wrong-surface result is a fail. Fix it or Stop. Keep proof scripts and saved output under `$(git rev-parse --git-dir)/litestack/`, never in the working tree.
 - A tool or skill that breaks mid-task. Say so. Never work around it silently.
 - Reversible work proceeds without asking. Always pause before an irreversible action: a force-push to a shared branch, a deploy, data deletion, or a message to another person.
 - No is an acceptable answer. When the user proposes an approach or scope, give your real judgment, and push back when it does not earn its place.
@@ -89,11 +89,13 @@ The designer (`design.md`) and the reviewer (see Review below) follow these rule
 Spawn the reviewer per Subagents, and overlap it per Speed. The brief holds four parts.
 
 - Kind. The playbook you ran.
-- Intent. One paragraph on what the change must do and what it must leave unchanged, from the user's request. For a bug, the symptom and the repro.
+- Request. The user's request, word for word. For a bug, also the repro command.
 - Base. The base ref to diff against, and the untracked files that belong to the change.
-- Checks. The exact pin and verify commands, in a form that writes nothing to the tree, such as lint without `--fix` and snapshot tests in CI mode, with roughly how long each took, the path of each piece of evidence the verification skill saved, each comparison script and the path of its kept output, and any script that made a repeated edit.
+- Checks. The exact pin command and the touched test command, in a form that writes nothing to the tree, such as snapshot tests in CI mode, with roughly how long each took. Add the path of each piece of evidence the verification skill saved, each comparison script and the path of its kept output, and any script that made a repeated edit.
 
-Leave out your diagnosis, your design rationale, and what you already checked. They anchor the reviewer.
+Leave out your diagnosis, your design rationale, what you already checked, and each call you made where the request was silent. They anchor the reviewer, and it should find those calls on its own.
+
+The reviewer tries the request itself and returns a verdict. PASS means every request item behaves as asked. PASS+NOTES means the same, and the change settled details the request left open. FAIL means a request item does not behave as asked, or a finding is critical.
 
 Triage each finding as Act on or Dismissed, with a one-line reason. Judge it against the code, not the reviewer's word.
 
@@ -103,8 +105,10 @@ Triage each finding as Act on or Dismissed, with a one-line reason. Judge it aga
 - A finding about code the change did not touch is Dismissed, unless the change makes it worse.
 - Dismiss a correctness or security finding only with the code path that refutes it.
 - A review of only nits means the change is sound. Fix the cheap ones and dismiss the rest.
+- A request item that does not behave as asked is Act on. A departure from the request, or from what it names to match, is never Dismissed. Fix it, or list it under Needs your call in the PR with the reason you kept it.
+- Each verdict note goes under Needs your call in the PR, unless you change the code to settle it from the request.
 
-Fix every Act on, then rerun the playbook's verify step. If the fixes changed logic beyond the lines the findings named, run one more review with a new reviewer. Stop on any design-level finding, or on an Act on that survives the second round.
+A FAIL never ships. Fix every Act on, then rerun the playbook's verify step. If the fixes changed logic beyond the lines the findings named, run one more review with a new reviewer. Stop on any design-level finding, or on an Act on that survives the second round.
 
 ## Writing
 
@@ -121,4 +125,4 @@ This covers the reply, code comments, commit messages, and the PR. Write it clea
 
 ## Reply
 
-Give the playbook's reply parts in order, written per Writing. Then the review, with the findings you fixed, and each dismissed finding with its reason. Then name each principle that changed a decision and the choice it changed. Name anything you could not verify, and why. End with the PR link, or the branch and commit when there is no PR, and any stop or open item.
+Give the playbook's reply parts in order, written per Writing. Then the review, with the reviewer's verdict, the findings you fixed, each dismissed finding with its reason, and the Needs your call list. Then name each principle that changed a decision and the choice it changed. Name anything you could not verify, and why. End with the PR link, or the branch and commit when there is no PR, and any stop or open item.

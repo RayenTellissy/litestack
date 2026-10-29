@@ -8,11 +8,12 @@
 
 **Description.** Write a one-minute briefing for a reviewer who has the diff, in short sentences with few identifiers. Use these `##` headings in this order, and drop any with nothing to say.
 
+- `## Needs your call`. Each open decision from the reply and each note from the reviewer's verdict, one line each, with what the change does now. A departure from the request you kept goes here too, with its reason.
 - `## Why`. The problem and the approach, in one to three sentences.
 - `## What changed`. One to three bullets. Name both sides of a rename.
 - `## Scope`. What it covers and what it leaves out on purpose.
 - `## Risk`. Who or what it touches, and why that is safe.
-- `## Verification`. Each check you ran and its result. Attach a screenshot or recording when it proves a UI claim.
+- `## Verification`. The reviewer's verdict, then each check you ran and its result. Attach a screenshot or recording when it proves a UI claim.
 
 Keep the body under about 30 lines.
 
