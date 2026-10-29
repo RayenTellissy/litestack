@@ -58,7 +58,7 @@ Speed comes from never waiting and never doing work twice, not from skipping pro
 - Keep the inner loop tight. While you edit, run only the pin and the touched test file, using the runner's file or name filter. Save the area's full tests and lint for verify.
 - Script repeated edits. A repeated edit is one scripted pass, not a run of hand edits (Build the lever).
 - No double work. Do not re-read a file you just edited. Do not rerun a check whose inputs have not changed. Trim long output with `tail`, `head`, or `grep`.
-- Overlap the review. Start the reviewer the moment verify passes. While it runs, draft the commit message, the PR body, and the reply.
+- Overlap the review. Commit the verified change, then start the reviewer. While it runs, draft the PR body and the reply, and leave the tree and branch alone.
 - Do not wait on people or bots. Decide reversible calls and report them. After the PR opens, post the URL and stop.
 
 ## Stop
@@ -78,7 +78,7 @@ To stop, name the Gate line or tripwire that fired, and what the task needs that
 
 The designer (`design.md`) and the reviewer (see Review below) follow these rules.
 
-- Make one Agent call with `subagent_type` set to `litestack-designer` or `litestack-reviewer`, or `litestack:litestack-designer` or `litestack:litestack-reviewer` when the Agent tool lists them under the plugin's name. Pass no `model` or `effort`. Each agent's definition sets `model: inherit` and `effort: xhigh`, so it runs on this session's model even when a default subagent model is configured. Run it in the background, through the tool's background option when it has one, and keep working.
+- Make one Agent call with `subagent_type` set to `litestack-designer` or `litestack-reviewer`, or `litestack:litestack-designer` or `litestack:litestack-reviewer` when the Agent tool lists them under the plugin's name. Pass no `model` or `effort`. Each agent's definition sets `model: inherit` and `effort: xhigh`, so it runs on this session's model even when a default subagent model is configured. Set `run_in_background: true` on the Agent call when the tool has that option, and keep working.
 - Each one is a fresh subagent with its own empty context. It sees the code and its brief, and nothing of this session. Never fork this session for it, and never resume or message an earlier one.
 - Open the brief with the absolute paths of `principles.md` and `design.md` in `${CLAUDE_SKILL_DIR}`. The agent reads them from there.
 - If the agent type does not exist, the session started before the install. Use `subagent_type: "general-purpose"` with `effort: "xhigh"` and this session's model, and open the brief with "Read `${CLAUDE_SKILL_DIR}/../../agents/<type>.md` in full and follow it. Edit nothing.", with the path written out in full.
@@ -91,7 +91,7 @@ Spawn the reviewer per Subagents, and overlap it per Speed. The brief holds four
 - Kind. The playbook you ran.
 - Request. The user's request, word for word. For a bug, also the repro command.
 - Base. The base ref to diff against, and the untracked files that belong to the change.
-- Checks. The exact pin command and the touched test command, in a form that writes nothing to the tree, such as snapshot tests in CI mode, with roughly how long each took. Add the path of each piece of evidence the verification skill saved, each comparison script and the path of its kept output, and any script that made a repeated edit.
+- Checks. The exact pin command and the touched test command, in a form that writes nothing to the tree, such as snapshot tests in CI mode, with how long its last run took. Never rerun a check only to time it. Add the path of each piece of evidence the verification skill saved, each comparison script and the path of its kept output, and any script that made a repeated edit.
 
 Leave out your diagnosis, your design rationale, what you already checked, and each call you made where the request was silent. They anchor the reviewer, and it should find those calls on its own.
 
