@@ -10,7 +10,7 @@ As a plugin, from inside a session:
 /plugin install litestack --marketplace RayenTellissy/litestack
 ```
 
-`/plugin` updates it from then on. A plugin's skill is named after the plugin, so the command is `/litestack:litestack`.
+The plugin has no pinned version, so each commit to `main` is a new version. Claude Code does not update plugins from this marketplace on its own. Turn on auto-update for the `litestack` marketplace under `/plugin` > Marketplaces, or run `claude plugin update litestack@litestack` and start a new session. A plugin's skill is named after the plugin, so the command is `/litestack:litestack`.
 
 Or with the script, from a clone:
 

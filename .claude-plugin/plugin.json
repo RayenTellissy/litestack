@@ -1,6 +1,5 @@
 {
   "name": "litestack",
-  "version": "0.1.0",
   "description": "A fast, verified workflow for small features, bug fixes, refactors, and chores.",
   "author": {
     "name": "RayenTellissy"
