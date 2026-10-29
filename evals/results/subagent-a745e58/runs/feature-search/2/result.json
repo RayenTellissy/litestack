@@ -1,0 +1,54 @@
+{
+  "case": "feature-search",
+  "run": 2,
+  "kind": "feature",
+  "expect": "ship",
+  "mode": "subagent",
+  "workdir": "/private/tmp/claude-501/-Users-ryan--claude-spares-spare-u1NzCf/69e29eb5-525f-441b-a171-2f2eff666512/scratchpad/evalwork/litestack-eval-subagent-a745e58-7588z0he/feature-search-2/repo",
+  "base": "774e8a2c2f1843271cc9b5fce2912259e3911201",
+  "error": null,
+  "run_error": null,
+  "reply": "## Search command added\n\n`python3 -m tasks search <text>` now lists the open tasks whose title contains `<text>`, ignoring case. Each line looks exactly like a `list` line, tags included. `--all` adds done tasks. When nothing matches, it prints `No matching tasks.` and exits with status 1. A match exits 0. The README example block has a `search` line.\n\n**Shape.** No new type and no stored field. `tasks/cli.py` gets a `search` subparser with a `text` positional and the same `--all` flag that `list` has, plus a `cmd_search` handler. The handler filters with one list comprehension, the same way `cmd_list` does. I skipped the design step because the change adds no new type, module or cross-module signature. I copied `cmd_list` and its subparser instead. Matching uses `str.casefold`, so \"STRASSE\" finds \"Stra\u00dfe\" (measured by the reviewer).\n\n**Acceptance check.** I added three tests in `tests/test_cli.py`. They cover case-insensitive matching in `list` format, done tasks hidden unless `--all`, and the no-match message with exit 1. A done-only match counts as no match.\n- Before the feature (measured, no marks): `FAILED (failures=3)`. argparse rejected `search` with exit 2 and empty stdout. Output is in `.git/litestack/acceptance-fail.txt`.\n- After the feature (measured): `Ran 3 tests ... OK`. The full suite gives `Ran 7 tests ... OK`.\n- I also ran the real CLI with `.git/litestack/drive.sh`. It saved `.git/litestack/drive-output.txt`, which shows `search MILK` \u2192 `[ ] 3 Milk the cow #farm` (exit 0), `search MILK --all` \u2192 the done `[x] 1 Buy milk #home` plus task 3, and `search zebra` \u2192 `No matching tasks.` with `[exit 1]`.\n\n**Open decisions:**\n- `No matching tasks.` goes to stdout. That matches the `No tasks.` message from `list`. Note that `done` writes its exit-1 error to stderr.\n- `search` has no `--tag` option because the request listed only `--all`.\n- Only titles are searched, not tags.\n- The query is one argument, the same as `add`'s title. Multi-word text needs quotes.\n\n## Review\n\nThe reviewer's verdict is PASS+NOTES with no findings, so I fixed nothing and dismissed nothing. It re-ran the pin, the full suite and the drive script, and all passed. Its output matched the saved file byte for byte. It also compared `search \"\"` with `list` byte for byte, and 14 filtered `search` outputs (7 queries, each with and without `--all`) against the matching `list` lines. All were identical.\n\nNeeds your call (the reviewer's notes, each describing what the change does now):\n- The no-match message goes to stdout and stderr stays empty. The request named no stream.\n- An empty query `search \"\"` matches every task, so it prints the same as `list`.\n- `search milk --tag home` is a usage error with exit 2.\n- A query that starts with `-` needs `--` first, as in `search -- -x`. `add` already behaves this way because of argparse.\n- If the tasks file is missing, search prints `No matching tasks.` and exits 1.\n- The help text reads \"list open tasks whose title contains text\".\n\n## Principles that changed a decision\n\n- **Smallest change.** No `--tag` on `search`, and no shared helper for the open-or-all filter. The one-line filter repeats `cmd_list` instead of adding a layer.\n- **Experience first.** I chose `casefold` over `lower` so that \"ignoring case\" holds for non-ASCII titles.\n- The skill's match rule (open details follow what the request names) put the no-match message on stdout, like `list`'s empty state.\n- **Test behavior.** The tests drive the CLI as a subprocess and check only stdout and exit status.\n- **Verifiable units.** The tests went into their own commit with `@unittest.expectedFailure`. The feature commit removes those marks. unittest fails the run on an unexpected success, so the marks act as strict.\n\n## Not verified\n\n- The repo has no linter or type checker, and none is installed. I ran only `python3 -m py_compile`.\n- I tested on Python 3.9.6 only.\n- The task-list tool refused the call because I ran as a subagent, so I tracked the playbook steps in my messages instead.\n\n## Branch\n\nThere is no PR because the repository has no remote. The work is on branch `feat/search-command` in `/private/tmp/claude-501/-Users-ryan--claude-spares-spare-u1NzCf/69e29eb5-525f-441b-a171-2f2eff666512/scratchpad/evalwork/litestack-eval-subagent-a745e58-7588z0he/feature-search-2/repo`. It has two commits on top of `main` and the tree is clean.\n- `8d0a919` test(cli): add expected-failure acceptance tests for search\n- `3e6d1b2` feat(cli): add search command to find tasks by title\n\nEvidence files are in that repo's `.git/litestack/`: `drive.sh`, `drive-output.txt` and `acceptance-fail.txt`.",
+  "skill_invoked": true,
+  "wall_seconds": 318.2,
+  "final_context_tokens": 92054,
+  "tool_uses": 22,
+  "subagents": {
+    "litestack-reviewer": 1
+  },
+  "tokens": {
+    "inputTokens": 52,
+    "cacheCreationInputTokens": 136352,
+    "cacheReadInputTokens": 1747697,
+    "outputTokens": 29102
+  },
+  "grade": {
+    "tree": "/private/tmp/claude-501/-Users-ryan--claude-spares-spare-u1NzCf/69e29eb5-525f-441b-a171-2f2eff666512/scratchpad/evalwork/litestack-eval-subagent-a745e58-7588z0he/feature-search-2/repo",
+    "commits": 2,
+    "commit_titles": [
+      "test(cli): add expected-failure acceptance tests for search",
+      "feat(cli): add search command to find tasks by title"
+    ],
+    "source_files_changed": [
+      "README.md",
+      "tasks/cli.py"
+    ],
+    "source_lines_added": 20,
+    "source_lines_deleted": 0,
+    "left_uncommitted": [],
+    "test_files_changed": [
+      "tests/test_cli.py"
+    ],
+    "said_stop": false,
+    "stopped": false,
+    "stop_correct": true,
+    "visible_exit": 0,
+    "visible_tail": ".......\n----------------------------------------------------------------------\nRan 7 tests in 1.318s\n\nOK\n",
+    "hidden_exit": 0,
+    "hidden_tail": "......\n----------------------------------------------------------------------\nRan 6 tests in 1.853s\n\nOK\n",
+    "pin_fails_on_base": true,
+    "test_commit_before_fix": true,
+    "duplicate_counts": [],
+    "pass": true
+  }
+}

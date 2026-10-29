@@ -1,0 +1,59 @@
+Tasks can now have an optional due date. `python3 -m tasks add "Buy milk" --tag home --due 2026-11-01` saves it, and `list` shows `[ ] 1 Buy milk #home due 2026-11-01`. `list --overdue` shows only open tasks that are past due, and prints `No tasks.` when there are none. An invalid date such as `2026-02-30` makes `add` exit with status 2 and saves nothing. Older task files load as before, and tasks without a due date print and save exactly as before. The work is in two commits on `feat/due-date`. There is no PR because the repository has no remote.
+
+**The shape and why**
+- `Task` has a new last field, `due: Optional[datetime.date] = None`. A `date` rather than a string makes the overdue check a plain date comparison.
+- Text becomes a `date` in two places. One is the argparse `type=` on `--due`, which rejects a bad date before anything is loaded or saved. The other is `store._decode`, which reads the file.
+- The file format lives only in `store.py`, in `_encode` and `_decode`. A dated task is saved as `"due": "YYYY-MM-DD"`. An undated task is saved with no `due` key, the same way older files store it.
+- The `--overdue` filter sits next to the existing `--tag` filter in `cmd_list`.
+- A designer subagent sketched this shape before the build and returned no Stop.
+
+**Acceptance check, failing and then passing**
+- I committed the new tests first, in `9ef26a7`, marked as expected failures. Run without the marks against the old code, they failed:
+  - `'tasks: error: unrecognized arguments: --due 2026-02-30' != "tasks add: error: argument --due: invalid date value: '2026-02-30'"`
+  - `Ran 9 tests in 1.034s` / `FAILED (failures=4)`
+- The old-file load test passed before the change, which is right for a backward-compatibility test.
+- After the feature commit and the review fix, `python3 -B -m unittest discover -s tests -v` gives `Ran 10 tests in 1.976s` / `OK`.
+- I also ran the real CLI with a script. Some lines from its output:
+  - `$ tasks list` → `[ ] 3 Pay rent #home due 2026-10-01` and `[ ] 1 Buy milk #home` (an undated task from an older file)
+  - `$ tasks add Bad --due 2026-02-30` → `tasks add: error: argument --due: invalid date value: '2026-02-30'` `(exit 2)`. `cmp` then confirmed the file was unchanged.
+  - `$ tasks list --overdue` on 2026-10-29 → only `[ ] 3 Pay rent #home due 2026-10-01`. The task due today and the one due 2026-11-01 were left out.
+
+**Review**
+- Verdict: PASS+NOTES. The reviewer tried every item in the request and all of them passed. It also ran `list`, `list --all` and `list --tag` with the old code and the new code on the same file, and the output was identical.
+- Fixed one finding (a nit). On Python 3.11 and later, `date.fromisoformat` also accepts forms like `20261101`, so a non-`YYYY-MM-DD` date would have been saved there. `parse_date` now rejects any value that doesn't read back as exactly `YYYY-MM-DD`. A new test covers `20261101`, `2026-W44-1` and `2026-1-5`. The fix is folded into the feature commit.
+- Nothing was dismissed.
+
+**Needs your call** (what the change does now):
+- `list --overdue --all` still shows only open tasks, because a done task is never overdue. `--overdue` combines with `--tag`.
+- A task due today is not overdue, since the request says "earlier than today". "Today" is the machine's local date.
+- An undated task is saved with no `due` key, so older versions of the tool can still read the file. A hand-written `"due": null` fails to load with a traceback, like other malformed files do today.
+- The invalid-date error uses argparse's normal output: a usage line, then `tasks add: error: argument --due: invalid date value: '<value>'`. Bad arguments such as `done abc` already produce this kind of error.
+- `--due` accepts only the exact `YYYY-MM-DD` form. If `--due` is given twice, the last one wins. `add --help` shows `--due YYYY-MM-DD` with no help text, the same as `--tag`.
+- A malformed `due` in a hand-edited `tasks.json` fails with a traceback, like other malformed files.
+
+**Principles that changed a decision**
+- Model the domain and Types: `due` is a `datetime.date`, not a string.
+- Boundaries: text is parsed once on the way in. A bad date fails in argparse, which is why nothing is saved. No guard in `cmd_add` is needed.
+- Design it as if it was always there: `due` is an ordinary dataclass field with a default, and the overdue filter sits with the other filters.
+- Smallest change: no `is_overdue` method, no injectable clock, and no new error handling for malformed files.
+- Experience first: the usage line shows `--due YYYY-MM-DD`, so the expected format is visible when the user gets it wrong.
+- Encode lessons in structure: the Python 3.11 format gap is covered by a test, not only a comment.
+- Verifiable units: the failing tests are committed first, then the feature.
+
+**Not verified**
+- I couldn't run Python 3.11 or later, because only 3.9.6 is available here. The fix should still reject other date forms there because `date.isoformat()` always returns `YYYY-MM-DD`, but that is inferred, not tested.
+- `test_list_overdue` adds a task due today, using the test process's date. It could fail if a run crosses midnight (inferred).
+- The project has no linter or type checker. I only compile-checked the files with `py_compile`.
+
+**Where things are**
+- Repository: `/private/tmp/claude-501/-Users-ryan--claude-spares-spare-u1NzCf/69e29eb5-525f-441b-a171-2f2eff666512/scratchpad/evalwork/litestack-eval-subagent-a745e58-7588z0he/feature-due-date-3/repo`
+- Branch `feat/due-date`, off `main` at `774e8a2`. The working tree is clean. Commits:
+  - `9ef26a7 test(tasks): pin due dates and list --overdue`
+  - `1776dd8 feat(tasks): add optional due dates and list --overdue`
+- Changed files: `tasks/model.py`, `tasks/store.py`, `tasks/cli.py`, `README.md`, `tests/test_cli.py`.
+- Evidence is in `.git/litestack/` inside the repository:
+  - `acceptance-before.txt` and `acceptance-after.txt`: test runs before and after the change.
+  - `surface.sh`, plus its output in `surface.txt` and `surface-after-fix.txt`: the CLI walkthrough.
+  - `xfail.py`: the script that added and removed the expected-failure marks.
+
+There is no PR because the repository has no remote. The work stops at the commits above, and nothing else is open.

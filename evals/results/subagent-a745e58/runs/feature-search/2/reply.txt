@@ -1,0 +1,50 @@
+## Search command added
+
+`python3 -m tasks search <text>` now lists the open tasks whose title contains `<text>`, ignoring case. Each line looks exactly like a `list` line, tags included. `--all` adds done tasks. When nothing matches, it prints `No matching tasks.` and exits with status 1. A match exits 0. The README example block has a `search` line.
+
+**Shape.** No new type and no stored field. `tasks/cli.py` gets a `search` subparser with a `text` positional and the same `--all` flag that `list` has, plus a `cmd_search` handler. The handler filters with one list comprehension, the same way `cmd_list` does. I skipped the design step because the change adds no new type, module or cross-module signature. I copied `cmd_list` and its subparser instead. Matching uses `str.casefold`, so "STRASSE" finds "Straße" (measured by the reviewer).
+
+**Acceptance check.** I added three tests in `tests/test_cli.py`. They cover case-insensitive matching in `list` format, done tasks hidden unless `--all`, and the no-match message with exit 1. A done-only match counts as no match.
+- Before the feature (measured, no marks): `FAILED (failures=3)`. argparse rejected `search` with exit 2 and empty stdout. Output is in `.git/litestack/acceptance-fail.txt`.
+- After the feature (measured): `Ran 3 tests ... OK`. The full suite gives `Ran 7 tests ... OK`.
+- I also ran the real CLI with `.git/litestack/drive.sh`. It saved `.git/litestack/drive-output.txt`, which shows `search MILK` → `[ ] 3 Milk the cow #farm` (exit 0), `search MILK --all` → the done `[x] 1 Buy milk #home` plus task 3, and `search zebra` → `No matching tasks.` with `[exit 1]`.
+
+**Open decisions:**
+- `No matching tasks.` goes to stdout. That matches the `No tasks.` message from `list`. Note that `done` writes its exit-1 error to stderr.
+- `search` has no `--tag` option because the request listed only `--all`.
+- Only titles are searched, not tags.
+- The query is one argument, the same as `add`'s title. Multi-word text needs quotes.
+
+## Review
+
+The reviewer's verdict is PASS+NOTES with no findings, so I fixed nothing and dismissed nothing. It re-ran the pin, the full suite and the drive script, and all passed. Its output matched the saved file byte for byte. It also compared `search ""` with `list` byte for byte, and 14 filtered `search` outputs (7 queries, each with and without `--all`) against the matching `list` lines. All were identical.
+
+Needs your call (the reviewer's notes, each describing what the change does now):
+- The no-match message goes to stdout and stderr stays empty. The request named no stream.
+- An empty query `search ""` matches every task, so it prints the same as `list`.
+- `search milk --tag home` is a usage error with exit 2.
+- A query that starts with `-` needs `--` first, as in `search -- -x`. `add` already behaves this way because of argparse.
+- If the tasks file is missing, search prints `No matching tasks.` and exits 1.
+- The help text reads "list open tasks whose title contains text".
+
+## Principles that changed a decision
+
+- **Smallest change.** No `--tag` on `search`, and no shared helper for the open-or-all filter. The one-line filter repeats `cmd_list` instead of adding a layer.
+- **Experience first.** I chose `casefold` over `lower` so that "ignoring case" holds for non-ASCII titles.
+- The skill's match rule (open details follow what the request names) put the no-match message on stdout, like `list`'s empty state.
+- **Test behavior.** The tests drive the CLI as a subprocess and check only stdout and exit status.
+- **Verifiable units.** The tests went into their own commit with `@unittest.expectedFailure`. The feature commit removes those marks. unittest fails the run on an unexpected success, so the marks act as strict.
+
+## Not verified
+
+- The repo has no linter or type checker, and none is installed. I ran only `python3 -m py_compile`.
+- I tested on Python 3.9.6 only.
+- The task-list tool refused the call because I ran as a subagent, so I tracked the playbook steps in my messages instead.
+
+## Branch
+
+There is no PR because the repository has no remote. The work is on branch `feat/search-command` in `/private/tmp/claude-501/-Users-ryan--claude-spares-spare-u1NzCf/69e29eb5-525f-441b-a171-2f2eff666512/scratchpad/evalwork/litestack-eval-subagent-a745e58-7588z0he/feature-search-2/repo`. It has two commits on top of `main` and the tree is clean.
+- `8d0a919` test(cli): add expected-failure acceptance tests for search
+- `3e6d1b2` feat(cli): add search command to find tasks by title
+
+Evidence files are in that repo's `.git/litestack/`: `drive.sh`, `drive-output.txt` and `acceptance-fail.txt`.

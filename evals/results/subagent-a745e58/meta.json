@@ -1,0 +1,12 @@
+{
+  "label": "subagent-a745e58",
+  "mode": "subagent",
+  "started": "2026-10-29T16:35:06",
+  "runs_per_case": 3,
+  "model": null,
+  "effort": null,
+  "claude_version": "2.1.301 (Claude Code)",
+  "skill_sha256": "47efea2e60581271",
+  "commit": "a745e58",
+  "skill_dirty": false
+}

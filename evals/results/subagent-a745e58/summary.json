@@ -1,0 +1,56 @@
+{
+  "meta": {
+    "label": "subagent-a745e58",
+    "mode": "subagent",
+    "started": "2026-10-29T16:35:06",
+    "runs_per_case": 3,
+    "model": null,
+    "effort": null,
+    "claude_version": "2.1.301 (Claude Code)",
+    "skill_sha256": "47efea2e60581271",
+    "commit": "a745e58",
+    "skill_dirty": false
+  },
+  "total": {
+    "pass": "6/6",
+    "errors": 0,
+    "cost_total_usd": 0,
+    "wall_median_s": 486.8
+  },
+  "cases": [
+    {
+      "case": "feature-due-date",
+      "runs": 3,
+      "errors": 0,
+      "pass": "3/3",
+      "stop_correct": "3/3",
+      "hidden_pass": "3/3",
+      "pin_fails_on_base": "3/3",
+      "skill_invoked": "3/3",
+      "commits_median": 2,
+      "wall_median_s": 749.5,
+      "cost_mean_usd": null,
+      "output_tokens_median": 74028,
+      "total_tokens_median": 2846654,
+      "designer_spawns_mean": 1,
+      "reviewer_spawns_mean": 1
+    },
+    {
+      "case": "feature-search",
+      "runs": 3,
+      "errors": 0,
+      "pass": "3/3",
+      "stop_correct": "3/3",
+      "hidden_pass": "3/3",
+      "pin_fails_on_base": "3/3",
+      "skill_invoked": "3/3",
+      "commits_median": 2,
+      "wall_median_s": 306.5,
+      "cost_mean_usd": null,
+      "output_tokens_median": 29102,
+      "total_tokens_median": 1885363,
+      "designer_spawns_mean": 0,
+      "reviewer_spawns_mean": 1
+    }
+  ]
+}
