@@ -1,0 +1,39 @@
+{
+  "meta": {
+    "label": "subagent-84b4caf",
+    "mode": "subagent",
+    "started": "2026-10-29T17:33:40",
+    "runs_per_case": 3,
+    "model": null,
+    "effort": null,
+    "claude_version": "2.1.301 (Claude Code)",
+    "skill_sha256": "daf1c591c99c48ba",
+    "commit": "84b4caf",
+    "skill_dirty": false
+  },
+  "total": {
+    "pass": "3/3",
+    "errors": 0,
+    "cost_total_usd": 0,
+    "wall_median_s": 593.3
+  },
+  "cases": [
+    {
+      "case": "bug-split-remainder",
+      "runs": 3,
+      "errors": 0,
+      "pass": "3/3",
+      "stop_correct": "3/3",
+      "hidden_pass": "3/3",
+      "pin_fails_on_base": "3/3",
+      "skill_invoked": "3/3",
+      "commits_median": 2,
+      "wall_median_s": 593.3,
+      "cost_mean_usd": null,
+      "output_tokens_median": 29649,
+      "total_tokens_median": 2446220,
+      "designer_spawns_mean": 0,
+      "reviewer_spawns_mean": 1
+    }
+  ]
+}
