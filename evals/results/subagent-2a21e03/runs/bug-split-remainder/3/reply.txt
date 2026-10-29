@@ -1,0 +1,87 @@
+**Fixed.** `python3 -m tabsplit 100.00 alice bob carol` now prints `Total: $100.00`. Before, if a bill did not divide evenly, the shares added up to less than the bill. Up to one cent per person went missing. If a name was typed twice, a whole share went missing.
+
+**What was broken.** Two separate bugs made the Total come out lower than the amount entered.
+- **Uneven splits.** $100.00 over three people gave each person $33.33, for a total of $99.99. `80.00 alice bob carol --tip 15` totalled $91.98 instead of $92.00 (measured).
+- **Repeated names.** `90.00 bob bob carol` printed one `bob` line and `Total: $60.00`. I found this while testing the "always" in your request. It already happens on `main` (measured).
+
+**Root cause.**
+- `allocate` in `tabsplit/money.py` computed `total_cents // parts` and gave that share to everyone, so the remainder was dropped. A probe printed `allocate(10000, 3) = [3333, 3333, 3333] sum = 9999` (measured).
+- `split_even` in `tabsplit/bill.py` stored the shares in a dict keyed by name. A second `bob` overwrote the first one's share.
+
+**Fix.**
+- `allocate` now uses `divmod` and gives the leftover cents one each to the first people. Shares still differ by at most one cent.
+- `split_even` now returns `(name, amount)` pairs in the order the names were typed. `receipt` adds up those pairs.
+
+**Verification.** Before the fix:
+```
+$ python3 -m tabsplit 100.00 alice bob carol
+alice: $33.33
+bob: $33.33
+carol: $33.33
+Total: $99.99
+$ python3 -m tabsplit 80.00 alice bob carol --tip 15
+alice: $30.66
+bob: $30.66
+carol: $30.66
+Total: $91.98
+$ python3 -m tabsplit 90.00 bob bob carol
+bob: $30.00
+carol: $30.00
+Total: $60.00
+```
+After the fix, run after the last edit:
+```
+$ python3 -m tabsplit 100.00 alice bob carol
+alice: $33.34
+bob: $33.33
+carol: $33.33
+Total: $100.00
+$ python3 -m tabsplit 80.00 alice bob carol --tip 15
+alice: $30.67
+bob: $30.67
+carol: $30.66
+Total: $92.00
+$ python3 -m tabsplit 90.00 bob bob carol
+bob: $30.00
+bob: $30.00
+carol: $30.00
+Total: $90.00
+```
+- **Tests.** `python3 -m unittest discover -s tests` ran 12 tests, all OK.
+- **Pins.** Each of the three new tests was committed marked as an expected failure. Each one failed without the mark first. Saved runs show `Total: $99.99`, `[3066, 3066, 3066] != [3067, 3067, 3066]` and `Total: $60.00`.
+- **Sweep script.** It checks `allocate` on 48,012 totals and party sizes. It also runs the CLI 288 times with distinct and repeated names and tips of 0, 15 and 18.5. Result: 0 failures.
+
+**Review.** One fresh reviewer returned PASS+NOTES. It ran the CLI, the test suite and the sweep again. It also ran the new tests against `main`'s code, where all three fail. No finding needed a code change, and none was dismissed. It raised one nit about how amounts are parsed. I left that out of this change, with the reason below.
+
+**Needs your call.**
+- **Who pays the extra cent.** It goes to the people typed first, so alice pays $33.34. It could go to the last person instead, or rotate.
+- **Repeated names.** Each one gets its own line and share, so `bob` prints twice. The alternatives are to merge them into one `bob: $60.00` line or to reject repeated names with an error.
+- **Amounts that are read wrong.** Some amounts still don't match because `parse_amount` misreads them:
+  - `-1.50` totals `-$0.50`.
+  - `-0.50` totals `$0.50`.
+  - `10.005` is cut to `$10.00`.
+
+  `main` does the same. I left it out because the problem is in parsing the amount, not in splitting it, and the split now keeps whatever amount it gets. Fixing it needs a choice: accept negative and sub-cent amounts, or reject them when they are entered.
+
+**Principles that changed a decision.**
+- **Fix root causes.** I fixed `allocate` rather than printing the entered amount on the Total line. That would have hidden shares that still did not add up.
+- **Model the domain.** Shares became ordered `(name, amount)` pairs instead of a dict, because names are not unique.
+- **Verifiable units.** Each fix comes right after its own failing-test commit, so the history shows each failure and then its fix.
+- **Smallest change.** I left `parse_amount` alone. Its problems are about reading input and need a product decision.
+
+**Not verified.**
+- The project has no lint or type-check setup, so neither ran.
+- The task-list tool refused to run here because this session is a subagent. I tracked the playbook steps in this reply instead.
+
+**Where it is.** The repository has no remote, so there is no PR. The work is on branch `fix/split-remainder`, four commits on `main`, and the working tree is clean.
+- `91a08bf` test(money): pin the remainder that allocate drops on uneven splits
+- `7b3748a` fix(money): hand the split remainder to the first parts in allocate
+- `73b69c1` test(bill): pin the share lost when a name repeats in split_even
+- `990fea2` fix(bill): keep one share per entered name in split_even
+
+Everything is in `/private/tmp/claude-501/-Users-ryan--claude-spares-spare-u1NzCf/69e29eb5-525f-441b-a171-2f2eff666512/scratchpad/evalwork2/litestack-eval-subagent-2a21e03-koznip59/bug-split-remainder-3/repo/.git/litestack/`:
+- `sweep.py` is the sweep script and `sweep-after.txt` its output.
+- `repro-before.txt` and `repro-after.txt` hold the CLI runs.
+- `dup-before.txt`, `pin-fail-unmarked.txt` and `probe.txt` hold the failing runs and the probe.
+
+The open items are the three Needs your call entries.

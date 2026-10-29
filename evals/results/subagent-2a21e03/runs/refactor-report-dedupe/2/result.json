@@ -1,0 +1,54 @@
+{
+  "case": "refactor-report-dedupe",
+  "run": 2,
+  "kind": "refactor",
+  "expect": "ship",
+  "mode": "subagent",
+  "workdir": "/private/tmp/claude-501/-Users-ryan--claude-spares-spare-u1NzCf/69e29eb5-525f-441b-a171-2f2eff666512/scratchpad/evalwork2/litestack-eval-subagent-2a21e03-koznip59/refactor-report-dedupe-2/repo",
+  "base": "e122dd57b879feea32abf353b8039bce263155cc",
+  "error": null,
+  "run_error": null,
+  "reply": "The three reports now share one implementation, and their output is unchanged. `daily_summary`, `weekly_summary` and `monthly_summary` give the same strings as before. A fix to the grouping, totals or table format now goes in one place instead of three.\n\n**What changed**\n- The grouping, per-category totals, table rows, total row and `\"No entries.\"` fallback are now in one private function, `_summary(entries, period_of)`, in `ledger/reports.py`.\n- Each public function keeps its name and signature. It passes only its rule for turning a day into a period:\n  - daily uses `day.isoformat()`\n  - weekly uses the ISO year and week, formatted `YYYY-Www`\n  - monthly uses `YYYY-MM`\n- The diff is 11 lines added and 35 removed, in one file.\n\n**The pin**\n- **Existing tests:** `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests` passed 5 tests before and after the change.\n- **Comparison script:** the tests left gaps, so I added `.git/litestack/compare_summaries.py`. It runs the module from `main` and the working tree on the same inputs and makes 49 comparisons. The inputs cover:\n  - empty lists and generators, and input passed as a one-shot generator\n  - unsorted input and ISO-week year boundaries\n  - float summation order, wide and negative values, and `datetime` days\n  - the error type and message for bad input\n- **It can fail:** I changed the total to sum in sorted category order, and the script reported `1 differ` (`total 1.00` became `total 0.00`). Then I restored the file.\n\n**Proof the output is the same**\n- After every step the tests passed and the script printed `49 comparisons against main, 0 differ`.\n- The saved runs from before any edit (`compare-before.txt`) and at the branch tip (`compare-after.txt`) are byte-identical. Both are in `.git/litestack/`.\n\n**Reader load**\n- `reports.py` went from 65 lines to 41.\n- The `\"No entries.\"` branch went from 3 copies to 1, and the table format strings from 6 to 2.\n- Each report now has one extra call into `_summary`. That buys one copy of the logic where there were three that had to stay in step.\n\n**What shipped and what I reverted:** one commit shipped. Nothing was reverted, and there is no new behavior.\n\n**Review**\n- The reviewer's verdict was PASS, with no findings and no notes. It reran both checks with the same results. It also ran its own fuzz comparison of 9007 random cases against `main`, and none differed. Its working-tree fingerprint stayed clean.\n- No findings to fix, none dismissed, and nothing goes under Needs your call.\n\n**Principles that changed a decision**\n- **Model the domain:** the only thing that differs between the reports is the day-to-period rule. So that rule is the single parameter. I did not split grouping, totals and formatting into separate helpers.\n- **Smallest change:** I kept the existing two passes, grouping first and totals second. Merging them would change which error bad input raises first, and the pin checks that error.\n- **Smallest change:** daily passes `lambda day: day.isoformat()` rather than `date.isoformat`. The unbound method would drop the time from `datetime` days. The pin has a case for this.\n- **Smallest change:** I left `parse_line`'s local `datetime` import alone because it is outside the request.\n- **Prove it works:** the comparison against `main` is a script that reruns the same way. Its output is kept, and the mutation run shows it can fail.\n- **Design step and Subtract first were skipped:**\n  - The design step was not needed. There is no new type or module, and no signature another module calls changes. `_summary` is private.\n  - The touched code had nothing dead to remove first.\n\n**Not verified**\n- No linter or type checker is configured or installed, so none ran.\n- The checks ran only on Python 3.9.6.\n- The task-list tool refused to run inside this subagent, so I kept the playbook steps in order without it.\n\n**Where it stands:** there is no PR because the repository has no remote. The work is on branch `refactor/report-summaries`, commit `d0323ff`, `refactor(reports): share _summary across daily, weekly, and monthly summaries`. The tree is clean. Nothing is left open.",
+  "skill_invoked": true,
+  "wall_seconds": 433.1,
+  "final_context_tokens": 102404,
+  "tool_uses": 22,
+  "subagents": {
+    "litestack-reviewer": 1
+  },
+  "tokens": {
+    "inputTokens": 60,
+    "cacheCreationInputTokens": 144116,
+    "cacheReadInputTokens": 2129454,
+    "outputTokens": 35210
+  },
+  "grade": {
+    "tree": "/private/tmp/claude-501/-Users-ryan--claude-spares-spare-u1NzCf/69e29eb5-525f-441b-a171-2f2eff666512/scratchpad/evalwork2/litestack-eval-subagent-2a21e03-koznip59/refactor-report-dedupe-2/repo",
+    "commits": 1,
+    "commit_titles": [
+      "refactor(reports): share _summary across daily, weekly, and monthly summaries"
+    ],
+    "source_files_changed": [
+      "ledger/reports.py"
+    ],
+    "source_lines_added": 11,
+    "source_lines_deleted": 35,
+    "left_uncommitted": [],
+    "test_files_changed": [],
+    "said_stop": false,
+    "stopped": false,
+    "stop_correct": true,
+    "visible_exit": 0,
+    "visible_tail": ".....\n----------------------------------------------------------------------\nRan 5 tests in 0.000s\n\nOK\n",
+    "hidden_exit": 0,
+    "hidden_tail": "..\n----------------------------------------------------------------------\nRan 2 tests in 0.002s\n\nOK\n",
+    "pin_fails_on_base": null,
+    "test_commit_before_fix": false,
+    "duplicate_counts": [
+      1,
+      2,
+      1
+    ],
+    "pass": true
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "label": "subagent-2a21e03",
+  "mode": "subagent",
+  "started": "2026-10-29T17:19:06",
+  "runs_per_case": 3,
+  "model": null,
+  "effort": null,
+  "claude_version": "2.1.301 (Claude Code)",
+  "skill_sha256": "5c82aa89ed7e0c07",
+  "commit": "2a21e03",
+  "skill_dirty": false
+}
