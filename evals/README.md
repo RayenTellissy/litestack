@@ -127,7 +127,7 @@ What it showed:
 - The `feature-search` speedup mostly comes from `df4e5c1`, which skips the design step there. The baseline spawned a designer in all three runs, and this run spawned none. The baseline kept no reviewer transcripts, so the reviewer's own time cannot be compared.
 - Every reviewer returned PASS+NOTES. In two `feature-due-date` runs it found that Python 3.11 and later accept dates such as `20261101`, by running the CLI on 3.13. The author fixed both.
 - No run left files in the tree, and no reviewer left a scratch folder behind. Proof files sat under `.git/litestack/`.
-- The Needs your call lists ran from 4 to 9 items. Some restate what the request already settles, such as results in the same order as `list`.
+- The reviewers' notes ran from 9 to 11 items. Most restated what the request or `list` already settles, such as results in the same order as `list`. The reviewer now notes a detail only when the change could reasonably have gone another way and a user would notice. Rerun on the final code of `feature-search` runs 1 and 3 and `feature-due-date` run 2, the new reviewer cut the notes from 9, 10, and 11 to 1, 1, and 2. Verdicts and request checks stayed the same. The kept notes are the no-match output stream, the invalid-date error text, and whether an older version can read a file that holds due dates.
 
 The CLI-mode baseline is not recorded yet. The CLI login on this machine hit its weekly usage limit on 2026-10-28. Record it with the `run` command above, labelled `baseline-<commit>`, and commit `evals/results/<label>/`.
 
