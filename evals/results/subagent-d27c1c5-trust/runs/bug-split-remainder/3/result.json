@@ -1,0 +1,54 @@
+{
+  "case": "bug-split-remainder",
+  "run": 3,
+  "kind": "bug",
+  "expect": "ship",
+  "mode": "subagent",
+  "workdir": "/private/tmp/claude-501/-Users-ryan--claude-spares-spare-63SXoD/e01a2c93-f207-4c1f-9092-0c98579bcf0a/scratchpad/driver/work/tmpeg6vvbxm/tmp9p5oou01/tabsplit",
+  "base": "fcab5e2e8ea17ca1eea9ac0315c1d605f941aea5",
+  "error": null,
+  "run_error": null,
+  "reply": "The command you named now prints `Total: $100.00`, and an even split, a split with a tip, and a single person all add up too. \"Always\" still breaks in three cases that run through other code, and they fail the same way on `main`:\n- `python3 -m tabsplit 100.00 alice alice bob` prints `Total: $66.66`.\n- `python3 -m tabsplit -1.50 alice bob` prints `Total: -$0.50`.\n- `python3 -m tabsplit 100.999 alice bob` prints `Total: $100.99`.\n\nI left these out of this fix. They're listed under \"Needs your call\" below.\n\n**What was broken.** When a bill didn't divide evenly, it came up short. Each person was charged the rounded-down share and the leftover cents were thrown away. With 3 people that is up to 2 cents.\n\n**Root cause.** `allocate` in `tabsplit/money.py` divided and rounded down, then returned that share for everyone. I checked each step for `100.00` split 3 ways. Reading the amount gave 10000 cents. Adding a 0% tip gave 10000. Printing 10000 gave `$100.00`. Only `allocate(10000, 3)` was wrong. It returned `[3333, 3333, 3333]`, which adds up to 9999.\n\n**Fix.** `allocate` now hands out the leftover cents one at a time, starting with the first person. Shares always add up to the total and never differ by more than one cent. It's two changed lines in one file. Its only caller is `split_even`.\n\n**How I verified it.**\n\nBefore the fix (`main`):\n```\n$ python3 -m tabsplit 100.00 alice bob carol\nalice: $33.33\nbob: $33.33\ncarol: $33.33\nTotal: $99.99\n```\n\nThe test I wrote first, run without its expected-failure mark:\n```\nAssertionError: 'Total: $99.99' != 'Total: $100.00'\n```\n\nAfter the fix, on the command line:\n```\n$ python3 -m tabsplit 100.00 alice bob carol\nalice: $33.34\nbob: $33.33\ncarol: $33.33\nTotal: $100.00\n\n$ python3 -m tabsplit 0.05 alice bob carol\nalice: $0.02\nbob: $0.02\ncarol: $0.01\nTotal: $0.05\n\n$ python3 -m tabsplit 100.00 alice bob carol --tip 15\nalice: $38.34\nbob: $38.33\ncarol: $38.33\nTotal: $115.00\n```\n- `90.00` split 3 ways still gives $30.00 each and `Total: $90.00`.\n- `80.00 alice bob --tip 15` still gives $46.00 each and `Total: $92.00`.\n- One person on `100.00` gets `$100.00`.\n- A new committed test tries every amount from -$10.00 to $10.00 for 1 to 12 people. It checks the count of shares, that they add up to the total, and that no two differ by more than a cent.\n- I ran the new tests against the old code. They fail with the wrong totals, not with setup errors.\n- The full suite passes (12 tests in 0.033s, measured).\n\n**Review.** The independent reviewer returned PASS+NOTES with no findings. It ran its own wide check through the program's entry point: every amount from $0.00 to $30.00 for 1 to 12 people, plus 3,000 random amounts. All 39,012 cases add up, against 29,111 failures on `main`. Nothing needed fixing and nothing was dismissed. Its notes are below.\n\n**Needs your call**\n- **Duplicate names.** `100.00 alice alice bob` prints `Total: $66.66`. This is the same \"loses money\" symptom from a separate cause. `split_even` stores shares by name, so a repeated name overwrites the earlier share. The fix is either to reject repeated names when the command is read, or to list each one separately. It's a small change in `tabsplit/bill.py` or `tabsplit/__main__.py`.\n- **Negative amounts.** `-1.50 alice bob` prints `Total: -$0.50`. The reviewer found `-0.50` prints `Total: $0.50`. `parse_amount` applies the minus sign to the dollars but not the cents. The fix is either to reject negative amounts or to read the sign separately. Which one depends on whether a negative bill should be allowed at all.\n- **More than two decimals.** `100.999 alice bob` prints `Total: $100.99`, because `parse_amount` drops extra digits. The fix is to reject such amounts or round them. You pick which.\n- **Who pays the extra cent.** I chose the first people listed, so alice pays $33.34. Your request didn't say. For a negative amount the larger share goes to the last person instead (reviewer measured: `-100.00 alice bob carol` charges carol -$33.34). The totals still match either way.\n\n**Principles that changed a decision**\n- Fix root causes. I fixed `allocate` instead of having the receipt print the amount entered. That would have shown the right total over shares that don't add up to it.\n- Test behavior. The first test checks the receipt's `Total:` line, which is what you see. It doesn't check internal steps.\n- Verifiable units. The failing test went in first as its own commit, marked as an expected failure. The fix commit removes the mark, so the history shows the bug and then the fix.\n- Smallest change. I left the three other bugs out because each has its own cause.\n\n**Not verified.** The project has no type checker or linter, so none ran. I only tested on Python 3.9.6.\n\n**Where it stands.** The repository has no remote, so I didn't open a PR. The work is on branch `fix/allocate-remainder`, off `main` at `fcab5e2`, and nothing is left uncommitted:\n- `60630b2 test(bill): pin the receipt total for an uneven three-way split`\n- `1a42da0 fix(money): give leftover cents to the first shares in allocate`\n\nThe proof scripts and saved output are in `.git/litestack/`, outside the working tree. Nothing else is open beyond the \"Needs your call\" items.",
+  "skill_invoked": true,
+  "wall_seconds": 435.8,
+  "final_context_tokens": 94262,
+  "tool_uses": 20,
+  "subagents": {
+    "litestack-reviewer": 1
+  },
+  "tokens": {
+    "inputTokens": 64,
+    "cacheCreationInputTokens": 142343,
+    "cacheReadInputTokens": 2233484,
+    "outputTokens": 39433
+  },
+  "grade": {
+    "tree": "/private/tmp/claude-501/-Users-ryan--claude-spares-spare-63SXoD/e01a2c93-f207-4c1f-9092-0c98579bcf0a/scratchpad/driver/work/tmpeg6vvbxm/tmp9p5oou01/tabsplit",
+    "commits": 2,
+    "commit_titles": [
+      "test(bill): pin the receipt total for an uneven three-way split",
+      "fix(money): give leftover cents to the first shares in allocate"
+    ],
+    "source_files_changed": [
+      "tabsplit/money.py"
+    ],
+    "source_lines_added": 2,
+    "source_lines_deleted": 2,
+    "left_uncommitted": [],
+    "test_files_changed": [
+      "tests/test_bill.py",
+      "tests/test_money.py"
+    ],
+    "said_stop": false,
+    "stopped": false,
+    "stop_correct": true,
+    "visible_exit": 0,
+    "visible_tail": "............\n----------------------------------------------------------------------\nRan 12 tests in 0.030s\n\nOK\n",
+    "hidden_exit": 0,
+    "hidden_tail": ".......\n----------------------------------------------------------------------\nRan 7 tests in 0.023s\n\nOK\n",
+    "pin_fails_on_base": true,
+    "test_commit_before_fix": true,
+    "duplicate_counts": [],
+    "pass": true
+  }
+}

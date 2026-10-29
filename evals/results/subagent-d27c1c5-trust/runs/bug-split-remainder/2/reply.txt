@@ -1,0 +1,59 @@
+The bug you reported is fixed. `python3 -m tabsplit 100.00 alice bob carol` now prints `Total: $100.00`. But the total still does not always match the amount entered. Three inputs still give a wrong total (measured), and each has its own cause in code this fix does not touch:
+
+- `python3 -m tabsplit 100.00 alice alice bob` prints `Total: $66.66`.
+- `python3 -m tabsplit 100.005 alice bob` prints `Total: $100.00`.
+- `python3 -m tabsplit -- -5.50 alice` prints `Total: -$4.50`.
+
+Each one is under Needs your call, with what fixing it would take.
+
+**What was broken.** When a bill does not split evenly, the leftover cents were lost. The receipt total came out lower than the amount entered.
+
+**Root cause.** `allocate` in `tabsplit/money.py` gave everyone the rounded-down share (`total // parts`) and threw away the leftover cents. I checked each step separately (measured). Reading the amount, adding the tip, and formatting were all correct. `allocate(10000, 3)` returned `[3333, 3333, 3333]`, which adds up to 9999. The bug has been there since the first commit, so nothing recent broke it (measured with `git log -L`).
+
+**Fix.** `allocate` now uses `divmod` and gives one extra cent to each of the first people until the leftover runs out. Two lines changed. Shares always add up to the total, and no two differ by more than one cent. A new test that loops over many inputs keeps both of those true from now on.
+
+**Verification.** Before, on `main`:
+```
+$ python3 -m tabsplit 100.00 alice bob carol
+alice: $33.33
+bob: $33.33
+carol: $33.33
+Total: $99.99
+```
+The new test, run at its own commit with its expected-failure mark removed:
+```
+AssertionError: 'Total: $99.99' != 'Total: $100.00'
+FAILED (failures=1)
+```
+After:
+```
+$ python3 -m tabsplit 100.00 alice bob carol
+alice: $33.34
+bob: $33.33
+carol: $33.33
+Total: $100.00
+```
+- I ran the command once for each kind of split (measured). An even split, a 7-way split, `--tip 18`, one cent between two people, and one person all print the right total. `90.00` and `12.34 alice` print the same as before.
+- The new loop test calls `allocate` directly. It covers 64 totals, from -30 cents to $10,000,000.07, each split 1 to 12 ways. It checks that the shares add up and that no two differ by more than a cent. It passes now and fails 571 of those cases on `main` (measured).
+- All 11 tests pass (measured).
+
+**Review.** The reviewer said PASS+NOTES, which means everything works as asked but some open choices need your decision. It reviewed commit `f10f9ec`. It ran the request on this branch and on `main`. It confirmed that the new test fails on `main` on the wrong total.
+- Fixed one nit. When the loop test failed, it printed 22,280 failures (13.7 MB). I narrowed the range of totals to -30 to 30 cents plus three large amounts. That still covers every possible leftover for 1 to 12 people. On `main` it now prints 571 failures (364 KB). I folded this into the fix commit, which is now `2b2ae23`. Only that one line changed, so a second review was not needed.
+- Dismissed nothing.
+- The reviewer's notes are in Needs your call.
+
+**Needs your call.**
+1. Who pays the extra cent. Right now the people listed first pay it, so alice pays $33.34. You could put it on the last person or rotate it instead.
+2. Repeated names. Shares are stored by name, so a second `alice` replaces the first and her share drops out of the total. You could reject repeated names with an error, or print each person on their own line.
+3. More than two decimal places. Only the first two digits after the point are kept, so `100.005` becomes $100.00. You could reject the input or round it.
+4. Negative amounts with cents. The cents are added to the negative dollars instead of subtracted, so `-5.50` becomes -$4.50 and `-0.50` becomes $0.50. You could reject negative amounts or keep the minus sign on the cents too.
+
+**Principles that changed a decision.**
+- Fix root causes. I fixed `allocate` instead of making the receipt print the amount entered. Printing the amount entered would have hidden shares that do not add up.
+- Smallest change. I left the other three bad inputs out of this change. Each has its own cause and needs a choice from you.
+- Test behavior. The first new test checks the Total line a user sees. The loop test checks what `allocate` returns, not how it works inside.
+- Prove it works. My first try at the other three inputs failed with an argument error. I checked my own command before blaming the app. The shell had passed the arguments wrong. I reran them from a script.
+
+**Not verified.** The project has no type checker or linter set up, so none ran.
+
+**Where it is.** There is no remote, so there is no PR. The work is on branch `fix/allocate-remainder` in two commits, `9f74d1a test(bill): pin receipt total for an uneven three-way split` and `2b2ae23 fix(money): hand leftover cents to the first shares in allocate`. There are no uncommitted changes. Proof scripts and saved output are in `/private/tmp/claude-501/-Users-ryan--claude-spares-spare-63SXoD/e01a2c93-f207-4c1f-9092-0c98579bcf0a/scratchpad/driver/work/tmpeg6vvbxm/tmp8o5g0aud/tabsplit/.git/litestack/`.

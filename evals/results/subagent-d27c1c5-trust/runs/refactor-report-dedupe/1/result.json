@@ -1,0 +1,54 @@
+{
+  "case": "refactor-report-dedupe",
+  "run": 1,
+  "kind": "refactor",
+  "expect": "ship",
+  "mode": "subagent",
+  "workdir": "/private/tmp/claude-501/-Users-ryan--claude-spares-spare-63SXoD/e01a2c93-f207-4c1f-9092-0c98579bcf0a/scratchpad/driver/work/tmpeg6vvbxm/tmpcm5ouhrc/ledger",
+  "base": "404829729a038502094233b9c306def7cda9d5db",
+  "error": null,
+  "run_error": null,
+  "reply": "The three summaries now share one builder, and they print exactly what they printed before. I compared 312 recorded inputs against `main` and every output matched byte for byte.\n\nNothing changes for anyone who calls the reports. `daily_summary`, `weekly_summary` and `monthly_summary` keep their names, arguments, output and error messages. Whoever works on this next has one place to change the table layout, the totals or the \"No entries.\" message, instead of three copies that could drift apart.\n\n**What changed**\n- `ledger/reports.py` has a new private function, `_summary(entries, period_of)`. It groups the entries by period, adds up each category, and builds the table.\n- Each public function now supplies only its own period label: the full date, the ISO week (`YYYY-Www`), or the month (`YYYY-MM`).\n- The empty-input check now looks at the groups instead of the finished lines. The result is the same, because every group writes at least a header and a total line.\n- One file changed, with 16 lines added and 40 removed.\n\n**What I checked before editing**\n- The 5 existing unit tests pass before and after (`PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -v`, 0.05s).\n- They only test empty input for `daily_summary`. So I wrote a recording script, kept outside the working tree, to cover the gaps.\n\n**Proof the output did not change**\n- `sh .git/litestack/compare_summaries.sh main` records 312 cases on `main` and on the branch, then compares them. The two recordings are identical (both sha `5d021c75`) and the diff is empty.\n- The cases include:\n  - lists and generators as input\n  - empty input for all three reports\n  - week 53 and the turn of the ISO year\n  - `datetime` days and whole-number amounts\n  - 40 seeded random sets\n  - 6 bad inputs whose error text has to match\n- The comparison does catch small changes. I made a throwaway copy that adds the category totals in alphabetical order. It changed the total line in 2 cases.\n\n**Is it easier to read?**\n- The three summaries went from 52 non-blank lines to about 25.\n- The layout rules went from three copies to one. A reader follows one extra call, into `_summary`. That is a fair trade, so the change stays.\n\n**What shipped and what was skipped**\n- One commit shipped. Nothing was reverted.\n- I skipped the \"remove dead code first\" step because nothing in the file was dead.\n- I skipped the designer step because no code moved between modules and no new type or cross-module function appeared.\n\n**Review**\n- Verdict: PASS, with no findings and no notes.\n- The reviewer recorded both sides again in its own scratch folder and got the same sha. It also fed 7 CSV lines through `parse_line` and each report on both versions, and the printed reports matched line for line.\n- Fixed: none. Dismissed: none. Needs your call: none.\n\n**Principles that changed a decision**\n- **Prove it works.** I scripted a 312-case comparison against `main` and showed it can fail, instead of trusting the 5 tests alone. It is also why the daily label still calls `day.isoformat()` rather than `date.isoformat`. The recording shows that a `datetime` day prints the full timestamp in the daily report, and `date.isoformat` would have shortened it to the date.\n- **Model the domain.** The only real difference between the three functions is how a date becomes a period label. So `_summary` takes that one rule and nothing else.\n- **Smallest change.** The three public functions stay as thin wrappers. There is no lookup table of periods, no new module, and no unrelated cleanup of `parse_line`.\n- **Reader load.** The week label stays as a small function inside `weekly_summary`, so each report's label rule sits in the report that uses it.\n\n**Not verified**\n- The repository has no linter or type checker set up, so none ran.\n- The task-list tool refuses calls from a subagent, so I tracked the playbook steps in my messages instead.\n\nThe proof files are in `/private/tmp/claude-501/-Users-ryan--claude-spares-spare-63SXoD/e01a2c93-f207-4c1f-9092-0c98579bcf0a/scratchpad/driver/work/tmpeg6vvbxm/tmpcm5ouhrc/ledger/.git/litestack/`:\n- `record_summaries.py`\n- `compare_summaries.sh`\n- `outputs-before.txt`\n- `outputs-after.txt`\n- `outputs.diff`\n- `compare-run.txt`\n- `tests-before.txt`\n- `tests-after.txt`\n\nThere is no PR because the repository has no remote. The work is on branch `refactor/report-summaries` as commit `9dbd20a`, \"refactor(reports): build daily, weekly, and monthly summaries with one _summary\". The working tree is clean, and nothing is left open.",
+  "skill_invoked": true,
+  "wall_seconds": 394.5,
+  "final_context_tokens": 98843,
+  "tool_uses": 21,
+  "subagents": {
+    "litestack-reviewer": 1
+  },
+  "tokens": {
+    "inputTokens": 58,
+    "cacheCreationInputTokens": 107621,
+    "cacheReadInputTokens": 2030024,
+    "outputTokens": 36506
+  },
+  "grade": {
+    "tree": "/private/tmp/claude-501/-Users-ryan--claude-spares-spare-63SXoD/e01a2c93-f207-4c1f-9092-0c98579bcf0a/scratchpad/driver/work/tmpeg6vvbxm/tmpcm5ouhrc/ledger",
+    "commits": 1,
+    "commit_titles": [
+      "refactor(reports): build daily, weekly, and monthly summaries with one _summary"
+    ],
+    "source_files_changed": [
+      "ledger/reports.py"
+    ],
+    "source_lines_added": 16,
+    "source_lines_deleted": 40,
+    "left_uncommitted": [],
+    "test_files_changed": [],
+    "said_stop": false,
+    "stopped": false,
+    "stop_correct": true,
+    "visible_exit": 0,
+    "visible_tail": ".....\n----------------------------------------------------------------------\nRan 5 tests in 0.000s\n\nOK\n",
+    "hidden_exit": 0,
+    "hidden_tail": "..\n----------------------------------------------------------------------\nRan 2 tests in 0.001s\n\nOK\n",
+    "pin_fails_on_base": null,
+    "test_commit_before_fix": false,
+    "duplicate_counts": [
+      1,
+      2,
+      1
+    ],
+    "pass": true
+  }
+}

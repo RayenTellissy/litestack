@@ -1,0 +1,52 @@
+diff --git a/tabsplit/money.py b/tabsplit/money.py
+index 04c79c8..adeb9d6 100644
+--- a/tabsplit/money.py
++++ b/tabsplit/money.py
+@@ -20,5 +20,5 @@ def format_amount(cents):
+ def allocate(total_cents, parts):
+     if parts <= 0:
+         raise ValueError("parts must be positive")
+-    share = total_cents // parts
+-    return [share] * parts
++    share, extra = divmod(total_cents, parts)
++    return [share + 1] * extra + [share] * (parts - extra)
+diff --git a/tests/test_bill.py b/tests/test_bill.py
+index 3110f89..0ef2dc9 100644
+--- a/tests/test_bill.py
++++ b/tests/test_bill.py
+@@ -10,6 +10,12 @@ class ReceiptTest(unittest.TestCase):
+             "alice: $30.00\nbob: $30.00\ncarol: $30.00\nTotal: $90.00",
+         )
+ 
++    def test_uneven_split_keeps_total(self):
++        self.assertEqual(
++            receipt(10000, ["alice", "bob", "carol"]).splitlines()[-1],
++            "Total: $100.00",
++        )
++
+     def test_tip_rounds_to_cent(self):
+         self.assertEqual(add_tip(8000, 15), 9200)
+ 
+diff --git a/tests/test_money.py b/tests/test_money.py
+index ca07af3..ec02aec 100644
+--- a/tests/test_money.py
++++ b/tests/test_money.py
+@@ -26,6 +26,18 @@ class AllocateTest(unittest.TestCase):
+     def test_even_split(self):
+         self.assertEqual(allocate(9000, 3), [3000, 3000, 3000])
+ 
++    def test_leftover_cents_go_to_first_parts(self):
++        self.assertEqual(allocate(10000, 3), [3334, 3333, 3333])
++
++    def test_shares_always_add_up_to_total(self):
++        for total in range(-1000, 1001):
++            for parts in range(1, 13):
++                shares = allocate(total, parts)
++                case = f"allocate({total}, {parts}) = {shares}"
++                self.assertEqual(len(shares), parts, case)
++                self.assertEqual(sum(shares), total, case)
++                self.assertLessEqual(max(shares) - min(shares), 1, case)
++
+     def test_rejects_zero_parts(self):
+         with self.assertRaises(ValueError):
+             allocate(100, 0)

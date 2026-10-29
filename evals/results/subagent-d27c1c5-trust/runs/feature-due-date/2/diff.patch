@@ -1,0 +1,210 @@
+diff --git a/README.md b/README.md
+index 56ea579..ab4f3c2 100644
+--- a/README.md
++++ b/README.md
+@@ -5,8 +5,10 @@ current directory unless `TASKS_FILE` points elsewhere.
+ 
+ ```
+ python3 -m tasks add "Buy milk" --tag home
++python3 -m tasks add "File taxes" --due 2026-11-01
+ python3 -m tasks list
+ python3 -m tasks list --tag home
++python3 -m tasks list --overdue
+ python3 -m tasks done 1
+ python3 -m tasks list --all
+ ```
+diff --git a/tasks/cli.py b/tasks/cli.py
+index 9f5650f..9c4660e 100644
+--- a/tasks/cli.py
++++ b/tasks/cli.py
+@@ -1,14 +1,26 @@
+ import argparse
+ import sys
++from datetime import date
+ 
+ from . import store
+ from .model import Task
+ 
+ 
++def due_date(value):
++    try:
++        due = date.fromisoformat(value)
++    except ValueError:
++        due = None
++    # From Python 3.11, fromisoformat also accepts forms such as 20261101 and 2026-W44-4.
++    if due is None or due.isoformat() != value:
++        raise argparse.ArgumentTypeError(f"invalid date {value!r}, expected YYYY-MM-DD")
++    return due
++
++
+ def cmd_add(args):
+     tasks = store.load()
+     next_id = max((task.id for task in tasks), default=0) + 1
+-    task = Task(id=next_id, title=args.title, tags=args.tag)
++    task = Task(id=next_id, title=args.title, tags=args.tag, due=args.due)
+     tasks.append(task)
+     store.save(tasks)
+     print(f"Added {task.id}.")
+@@ -19,6 +31,9 @@ def cmd_list(args):
+     tasks = [t for t in store.load() if args.all or not t.done]
+     if args.tag:
+         tasks = [t for t in tasks if args.tag in t.tags]
++    if args.overdue:
++        today = date.today()
++        tasks = [t for t in tasks if t.overdue(today)]
+     if not tasks:
+         print("No tasks.")
+         return 0
+@@ -46,11 +61,13 @@ def parser():
+     add = sub.add_parser("add", help="add a task")
+     add.add_argument("title")
+     add.add_argument("--tag", action="append", default=[])
++    add.add_argument("--due", type=due_date, metavar="YYYY-MM-DD", help="due date")
+     add.set_defaults(run=cmd_add)
+ 
+     ls = sub.add_parser("list", help="list open tasks")
+     ls.add_argument("--tag")
+     ls.add_argument("--all", action="store_true", help="include done tasks")
++    ls.add_argument("--overdue", action="store_true", help="only open tasks due before today")
+     ls.set_defaults(run=cmd_list)
+ 
+     done = sub.add_parser("done", help="mark a task done")
+diff --git a/tasks/model.py b/tasks/model.py
+index 31c6e4b..7bccb61 100644
+--- a/tasks/model.py
++++ b/tasks/model.py
+@@ -1,5 +1,6 @@
+ from dataclasses import dataclass, field
+-from typing import List
++from datetime import date
++from typing import List, Optional
+ 
+ 
+ @dataclass
+@@ -8,8 +9,13 @@ class Task:
+     title: str
+     done: bool = False
+     tags: List[str] = field(default_factory=list)
++    due: Optional[date] = None
+ 
+     def line(self):
+         mark = "x" if self.done else " "
+         tags = "".join(f" #{tag}" for tag in self.tags)
+-        return f"[{mark}] {self.id} {self.title}{tags}"
++        due = f" due {self.due.isoformat()}" if self.due is not None else ""
++        return f"[{mark}] {self.id} {self.title}{tags}{due}"
++
++    def overdue(self, today):
++        return not self.done and self.due is not None and self.due < today
+diff --git a/tasks/store.py b/tasks/store.py
+index b725981..7b9b4b8 100644
+--- a/tasks/store.py
++++ b/tasks/store.py
+@@ -1,6 +1,7 @@
+ import json
+ import os
+ from dataclasses import asdict
++from datetime import date
+ 
+ from .model import Task
+ 
+@@ -12,11 +13,24 @@ def path():
+ def load():
+     try:
+         with open(path()) as f:
+-            return [Task(**raw) for raw in json.load(f)]
++            return [_from_record(raw) for raw in json.load(f)]
+     except FileNotFoundError:
+         return []
+ 
+ 
+ def save(tasks):
+     with open(path(), "w") as f:
+-        json.dump([asdict(task) for task in tasks], f, indent=2)
++        json.dump([_to_record(task) for task in tasks], f, indent=2)
++
++
++def _from_record(raw):
++    due = raw.get("due")
++    return Task(**{**raw, "due": None if due is None else date.fromisoformat(due)})
++
++
++def _to_record(task):
++    record = asdict(task)
++    due = record.pop("due")
++    if due is not None:
++        record["due"] = due.isoformat()
++    return record
+diff --git a/tests/test_cli.py b/tests/test_cli.py
+index 7b56bad..09d62b7 100644
+--- a/tests/test_cli.py
++++ b/tests/test_cli.py
+@@ -1,8 +1,10 @@
++import json
+ import os
+ import subprocess
+ import sys
+ import tempfile
+ import unittest
++from datetime import date
+ 
+ 
+ class CliTest(unittest.TestCase):
+@@ -41,6 +43,57 @@ class CliTest(unittest.TestCase):
+         self.assertEqual(result.returncode, 1)
+         self.assertEqual(result.stderr, "No task 9.\n")
+ 
++    def test_list_shows_due_date(self):
++        self.run_cli("add", "Buy milk", "--tag", "home", "--due", "2026-11-01")
++        self.run_cli("add", "File taxes")
++        out = self.run_cli("list").stdout
++        self.assertEqual(out, "[ ] 1 Buy milk #home due 2026-11-01\n[ ] 2 File taxes\n")
++
++    def test_list_overdue(self):
++        self.run_cli("add", "Pay rent", "--due", "2000-01-01")
++        self.run_cli("add", "Call mom", "--due", date.today().isoformat())
++        self.run_cli("add", "Renew passport", "--due", "2999-12-31")
++        self.run_cli("add", "Buy milk")
++        self.run_cli("add", "Return books", "--due", "2000-01-02")
++        self.run_cli("done", "5")
++        expected = "[ ] 1 Pay rent due 2000-01-01\n"
++        self.assertEqual(self.run_cli("list", "--overdue").stdout, expected)
++        self.assertEqual(self.run_cli("list", "--overdue", "--all").stdout, expected)
++
++    def test_list_overdue_when_none(self):
++        self.run_cli("add", "Renew passport", "--due", "2999-12-31")
++        self.run_cli("add", "Buy milk")
++        result = self.run_cli("list", "--overdue")
++        self.assertEqual(result.returncode, 0)
++        self.assertEqual(result.stdout, "No tasks.\n")
++
++    def test_add_rejects_invalid_due_date(self):
++        self.run_cli("add", "Buy milk", "--due", "2026-11-01")
++        result = self.run_cli("add", "File taxes", "--due", "2026-02-30")
++        self.assertEqual(result.returncode, 2)
++        self.assertEqual(result.stdout, "")
++        self.assertEqual(
++            result.stderr.splitlines()[-1],
++            "tasks add: error: argument --due: invalid date '2026-02-30', expected YYYY-MM-DD",
++        )
++        self.assertEqual(self.run_cli("list").stdout, "[ ] 1 Buy milk due 2026-11-01\n")
++
++    def test_add_rejects_other_iso_date_forms(self):
++        for value in ("20261101", "2026-W44-4"):
++            with self.subTest(value=value):
++                result = self.run_cli("add", "Buy milk", "--due", value)
++                self.assertEqual(result.returncode, 2)
++                self.assertIn(f"invalid date '{value}'", result.stderr)
++        self.assertEqual(self.run_cli("list").stdout, "No tasks.\n")
++
++    def test_loads_file_written_without_due_dates(self):
++        with open(self.env["TASKS_FILE"], "w") as f:
++            json.dump([{"id": 1, "title": "Buy milk", "done": False, "tags": ["home"]}], f)
++        self.assertEqual(self.run_cli("list").stdout, "[ ] 1 Buy milk #home\n")
++        self.run_cli("add", "File taxes", "--due", "2026-11-01")
++        out = self.run_cli("list").stdout
++        self.assertEqual(out, "[ ] 1 Buy milk #home\n[ ] 2 File taxes due 2026-11-01\n")
++
+ 
+ if __name__ == "__main__":
+     unittest.main()

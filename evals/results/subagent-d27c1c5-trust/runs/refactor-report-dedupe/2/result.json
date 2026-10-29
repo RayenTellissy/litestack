@@ -1,0 +1,54 @@
+{
+  "case": "refactor-report-dedupe",
+  "run": 2,
+  "kind": "refactor",
+  "expect": "ship",
+  "mode": "subagent",
+  "workdir": "/private/tmp/claude-501/-Users-ryan--claude-spares-spare-63SXoD/e01a2c93-f207-4c1f-9092-0c98579bcf0a/scratchpad/driver/work/tmpeg6vvbxm/tmps7rcyppz/ledger",
+  "base": "7f2bf85b597b447bab7692375bd033e19c326d3c",
+  "error": null,
+  "run_error": null,
+  "reply": "The grouping, totals, and table formatting now exist in one place, and the output of all three summaries is unchanged. `daily_summary`, `weekly_summary`, and `monthly_summary` returned the same results as `main` on 9,084 compared calls, including the 30 that raise errors. Nobody calling these functions will see a difference. Whoever changes the table layout or the totals next makes one edit instead of three matching ones.\n\n**What changed in the code**\n- One private helper, `_summary(entries, period_of)`, now does the grouping, per-category totals, the table rows, the `total` row, and the `No entries.` case. It is in `ledger/reports.py`.\n- Each public function is one line that passes its period key. Day and month use a lambda. Week uses a small `_iso_week` helper because it unpacks `isocalendar()`.\n- The public names and their `(entries)` signatures are unchanged. `parse_line` is untouched.\n- The diff is one file, 12 lines added and 35 removed.\n\n**Pin.** I ran `python3 -B -m unittest discover -s tests` before and after the edit. Both runs passed all 5 tests in 0.06s.\n\n**Proof the output did not change**\n- I wrote a comparison script and ran it as `python3 -B .git/litestack/compare.py main`. It loads `reports.py` from `main` and from the working tree, then runs all three functions on 3,028 inputs. 28 are hand-picked: empty input, a generator, unsorted input, ISO-week year edges, years below 1000, datetime days, a sum where the order of additions matters, and 10 kinds of bad input. 3,000 are random with a fixed seed.\n- Result (measured): `identical: 9084  differ: 0`, and both sides have the same digest `4fc37fdd\u20265269c`.\n- To check the script can catch a change, I planted a one-character change (`month:02d` to `month:d`). It reported `differ: 2597`, and I restored the file afterwards.\n- The reviewer reran the script against a fresh copy of `main` and got the same digest.\n- Saved output is all under `.git/litestack/`, not in the working tree: `compare-base.out`, `compare-tree.out`, `compare-mutant.out`, `pin-base-tests.out` and `pin-tree-tests.out`.\n\n**Is it easier to read?** `reports.py` went from 65 to 42 lines (measured). Following one report now means one extra jump, from the one-line public function to `_summary`, plus `_iso_week` for weekly. In return, the three copies that had to stay identical are gone. I kept the change and reverted nothing.\n\n**Review.** The reviewer returned PASS with no findings. It noted that the old monthly code read `entry.day` twice and the new code reads it once. I dismissed that. `Entry` is a frozen dataclass, so both reads always return the same value and no output changes. Nothing needs your call.\n\n**Principles that changed a decision**\n- *Model the domain* and *Design it as if it was always there*: only the period key differs between the three reports. So the shape is one builder that takes a key function, rather than a `period` string checked in an if-chain.\n- *Smallest change*: I kept the three public functions and added no new public `summary(period=...)`, which would have given callers two ways to do the same thing. I also moved the loop body word for word instead of tidying it.\n- *Prove it works*: two tidier versions would have changed the output, and I checked both.\n  - The unbound `date.isoformat` instead of `lambda day: day.isoformat()` prints `2026-03-02` where the current code prints `2026-03-02T09:30:00` when a day is a datetime.\n  - Summing the totals in sorted category order prints `0.00` where the current code prints `1.00` for totals {b: 1e16, c: -1e16, a: 1.0}.\n\n**Not verified.** Nothing is left unverified. These are library functions with no command-line entry point, so calling them directly is how they are used.\n\n**Shipped.** The repository has no remote, so there is no PR. The work is on branch `refactor/report-summaries` as commit `15cff81` (`refactor(reports): build all three summaries through one _summary`), on top of `main`. There are no uncommitted edits, and nothing is left open.",
+  "skill_invoked": true,
+  "wall_seconds": 406.7,
+  "final_context_tokens": 101073,
+  "tool_uses": 18,
+  "subagents": {
+    "litestack-reviewer": 1
+  },
+  "tokens": {
+    "inputTokens": 56,
+    "cacheCreationInputTokens": 111311,
+    "cacheReadInputTokens": 2027127,
+    "outputTokens": 39103
+  },
+  "grade": {
+    "tree": "/private/tmp/claude-501/-Users-ryan--claude-spares-spare-63SXoD/e01a2c93-f207-4c1f-9092-0c98579bcf0a/scratchpad/driver/work/tmpeg6vvbxm/tmps7rcyppz/ledger",
+    "commits": 1,
+    "commit_titles": [
+      "refactor(reports): build all three summaries through one _summary"
+    ],
+    "source_files_changed": [
+      "ledger/reports.py"
+    ],
+    "source_lines_added": 12,
+    "source_lines_deleted": 35,
+    "left_uncommitted": [],
+    "test_files_changed": [],
+    "said_stop": false,
+    "stopped": false,
+    "stop_correct": true,
+    "visible_exit": 0,
+    "visible_tail": ".....\n----------------------------------------------------------------------\nRan 5 tests in 0.000s\n\nOK\n",
+    "hidden_exit": 0,
+    "hidden_tail": "..\n----------------------------------------------------------------------\nRan 2 tests in 0.001s\n\nOK\n",
+    "pin_fails_on_base": null,
+    "test_commit_before_fix": false,
+    "duplicate_counts": [
+      1,
+      2,
+      1
+    ],
+    "pass": true
+  }
+}

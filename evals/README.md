@@ -166,6 +166,33 @@ What it showed:
 - Every run here was faster than every `84b4caf` run, and slower than every baseline run. Token counts overlap with `84b4caf`, so this run shows no measurable token change.
 - Most of the remaining gap to the baseline is the reviewer trying the request itself.
 
+## Closing holes in "done"
+
+`results/subagent-d27c1c5-trust/` reruns the four ship cases after these edits.
+
+- A change to what existing callers of a public name get is a Stop. A compatibility finding is real with no caller in the repository.
+- "Fails at base" no longer excuses the bug's repro or a command the request names.
+- The reply opens with whether every request item works, and names any that still fails first.
+- The reviewer runs the change's tests, and each comparison script, on a copy of the base.
+- The PR names the commit the reviewer saw.
+
+It was recorded in helper-agent mode on 2026-10-29, with the skill as of `d27c1c5` plus those edits (skill hash `668c7cb6953e4ecd`), in two waves of six. Like the runs before it, it was driven from this repository. It passed 12 of 12.
+
+| Case | Compared with | Wall per run | Tokens per run |
+|---|---|---|---|
+| `bug-split-remainder` | `a84278b-speed` | 321, 354, 379 s → 345, 425, 436 s | 1.7M to 2.1M → 2.1M to 2.5M |
+| `feature-search` | `a745e58` | 296, 306, 318 s → 302, 310, 357 s | 1.7M to 1.9M → 1.7M to 2.0M |
+| `feature-due-date` | `a745e58` | 655, 750, 853 s → 617, 692, 700 s | 2.6M to 4.0M → 2.9M to 3.3M |
+| `refactor-report-dedupe` | `2a21e03` | 362, 408, 433 s → 379, 394, 407 s | 1.8M to 2.3M → 1.8M to 2.2M |
+
+What it showed:
+
+- All 12 reviewers ran the change's tests or comparison script on a copy of the base. In the earlier runs of these cases, 7 of 15 did.
+- Every bug reply opened by saying the repro is fixed and that "always" still fails for three inputs, each through code the change does not touch. At `a84278b-speed`, all three opened by saying the total now always adds up.
+- Every bug run still fixed only `allocate`, in two lines, and no run stopped.
+- On the feature and refactor cases, time and tokens overlap with the earlier runs. On the bug case, all three runs used more tokens than all three earlier runs, though the lowest new run is only just above the highest old one. Time overlaps. The bug replies are longer, and the authors ran the inputs that still fail.
+- The earlier runs ran 3 (bug), 6 (features), and 12 (refactor) at once, and this one ran 6, so the wall times are not fully like for like.
+
 The CLI-mode baseline is not recorded yet. The CLI login on this machine hit its weekly usage limit on 2026-10-28. Record it with the `run` command above, labelled `baseline-<commit>`, and commit `evals/results/<label>/`.
 
 ## Why not `claude plugin eval`
