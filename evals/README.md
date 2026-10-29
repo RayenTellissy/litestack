@@ -149,6 +149,23 @@ What it showed:
 - Refactors were faster, and every reviewer there returned PASS with no notes, since "the output must not change" settles every detail. No refactor run left a `.pin/` folder.
 - Every stop run stopped at the right Gate line with no edits.
 
+## Loop tests instead of command-line sweeps
+
+`results/subagent-a84278b-speed/` reruns `bug-split-remainder` after three edits. The bug-fix playbook asks for a committed test that loops over many inputs, instead of starting the program once per input. The reviewer starts after the commit. Checks are no longer rerun only to time them. It was recorded in helper-agent mode on 2026-10-29, with the skill as of `a84278b` plus those edits (skill hash `7dc8424c2286f641`). Like the runs before it, it was driven from this repository, so its runs saw litestack's recent commit titles. It passed 3 of 3.
+
+| Runs | Wall per run | Tokens per run | Reviewer wall |
+|---|---|---|---|
+| baseline `3ce1296` | 211, 223, 282 s | 1.5M to 1.6M | not kept |
+| `84b4caf` | 402, 593, 1086 s | 2.0M to 2.5M | 137 to 495 s |
+| this run | 321, 354, 379 s | 1.7M to 2.1M | 135 to 166 s |
+
+What it showed:
+
+- Every run fixed only `allocate`, in two lines, and listed repeated names under Needs your call. The hidden tests passed, and each run's tests failed on the old code.
+- Each run committed a loop test over thousands of amounts and group sizes. No author tool call took more than 3 s. At `84b4caf`, six took over 20 s, the longest 126 s.
+- Every run here was faster than every `84b4caf` run, and slower than every baseline run. Token counts overlap with `84b4caf`, so this run shows no measurable token change.
+- Most of the remaining gap to the baseline is the reviewer trying the request itself.
+
 The CLI-mode baseline is not recorded yet. The CLI login on this machine hit its weekly usage limit on 2026-10-28. Record it with the `run` command above, labelled `baseline-<commit>`, and commit `evals/results/<label>/`.
 
 ## Why not `claude plugin eval`

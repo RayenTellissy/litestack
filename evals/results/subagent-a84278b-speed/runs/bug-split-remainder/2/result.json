@@ -1,0 +1,54 @@
+{
+  "case": "bug-split-remainder",
+  "run": 2,
+  "kind": "bug",
+  "expect": "ship",
+  "mode": "subagent",
+  "workdir": "/private/tmp/claude-501/-Users-ryan--claude-spares-spare-63SXoD/e01a2c93-f207-4c1f-9092-0c98579bcf0a/scratchpad/driver/work/tmp2iknmj5o/tmpjeuwpj4x/tabsplit",
+  "base": "0e77ed834410c2ea582225ea0926d36dd6f36d80",
+  "error": null,
+  "run_error": null,
+  "reply": "## The bug is fixed: the total now always matches the amount\n\n**What was broken.** When a bill didn't divide evenly, the leftover cents disappeared. Splitting `100.00` between three people gave everyone $33.33 and printed `Total: $99.99`. Now the shares always add up to the amount entered, and the first people in the list pay the leftover cents.\n\n**Why it happened.** `allocate` in `tabsplit/money.py` gave each person the whole cents that divide evenly and threw away the rest. The Total line adds up the shares, so that's where the missing cent showed. A test script confirmed the other steps were correct: reading the amount gave 10000 cents, but `allocate(10000, 3)` returned `[3333, 3333, 3333]`, which adds up to 9999.\n\n**The fix.** I changed two lines in `allocate`. It now gives one extra cent to each of the first people until the leftover runs out. Whoever works on this next gets an `allocate` whose shares always add up to the total and never differ by more than one cent. A new test checks that across 18,012 combinations of amount and group size.\n\n**Verification.** Before the fix:\n```\n$ python3 -m tabsplit 100.00 alice bob carol\nalice: $33.33\nbob: $33.33\ncarol: $33.33\nTotal: $99.99\n```\nAfter the fix:\n```\n$ python3 -m tabsplit 100.00 alice bob carol\nalice: $33.34\nbob: $33.33\ncarol: $33.33\nTotal: $100.00\n```\nI also ran these on the command line after the fix:\n- `90.00` three ways still gives $30.00 each.\n- `100.00` six ways gives four people $16.67 and two $16.66, totalling $100.00.\n- `10.00` three ways with `--tip 15` gives $3.84, $3.83 and $3.83, totalling $11.50.\n- The README example `80.00 alice bob --tip 15` still gives $46.00 each.\n\nBefore the fix, both new tests failed. One showed the receipt printing `$99.99` instead of `$100.00`. The other showed `allocate(-500, 3)` adding up to -501. Now all 11 tests pass with `python3 -m unittest discover -s tests`.\n\n**Review.** An independent reviewer gave it a pass with notes and found no problems. There was nothing to fix and nothing to dismiss. The reviewer ran the new tests against the old code and saw them fail. It also confirmed the tests-only commit passes with its two tests marked as expected failures. Its notes are the first two items below. The other two items I found myself.\n\n**Needs your call:**\n- **Who pays the leftover cent.** The first people in the list pay one extra cent each, so alice pays $33.34. On a negative amount, the same rule gives the slightly bigger refund to the people at the end of the list. Changing who pays means reordering the list `allocate` returns.\n- **Repeated names lose money.** `100.00 alice alice bob` prints `Total: $66.66`. It did this before the fix too. Shares are stored by name, so a repeated name keeps only one share. Fixing it means either rejecting repeated names or keeping a separate share for each entry. That's a product decision, so I left it out.\n- **Negative amounts with cents come out wrong.** `-5.50` gives a total of -$4.50, and `-0.50` gives +$0.50. The amount reader makes the dollars negative but always adds the cents as positive. Fixing it means applying the minus sign to the whole amount, or rejecting negative amounts.\n- **Extra decimal places are dropped without warning.** `100.009` totals $100.00. Fixing it means either rejecting amounts with more than two decimal places or choosing a rounding rule.\n\n**Principles that changed a decision:**\n- **Fix root causes.** I fixed `allocate`, where the cent goes missing. Printing the entered amount on the Total line would have hidden the problem while the shares still came up short.\n- **Smallest change.** Each of the other three problems has its own cause. I kept them out of this change, even though your request says \"always\".\n- **Verifiable units.** The failing tests went in first, marked as expected failures. The fix commit removed that mark, so the history shows the failure and then the fix.\n\n**Not checked.** The project has no type checker or linter, so neither was run.\n\n**Where it is.** There's no pull request because the repository has no remote. The work is on branch `fix/split-remainder`, with no uncommitted edits:\n- `d33d4e4 test(money): pin shares that must add up to the bill total`\n- `1f841c7 fix(money): hand the leftover cents to the first shares in allocate`\n\nThe saved output from each check is in `.git/litestack/`. The four items under Needs your call are still open.",
+  "skill_invoked": true,
+  "wall_seconds": 379.3,
+  "final_context_tokens": 92610,
+  "tool_uses": 22,
+  "subagents": {
+    "litestack-reviewer": 1
+  },
+  "tokens": {
+    "inputTokens": 58,
+    "cacheCreationInputTokens": 136534,
+    "cacheReadInputTokens": 1946222,
+    "outputTokens": 36463
+  },
+  "grade": {
+    "tree": "/private/tmp/claude-501/-Users-ryan--claude-spares-spare-63SXoD/e01a2c93-f207-4c1f-9092-0c98579bcf0a/scratchpad/driver/work/tmp2iknmj5o/tmpjeuwpj4x/tabsplit",
+    "commits": 2,
+    "commit_titles": [
+      "test(money): pin shares that must add up to the bill total",
+      "fix(money): hand the leftover cents to the first shares in allocate"
+    ],
+    "source_files_changed": [
+      "tabsplit/money.py"
+    ],
+    "source_lines_added": 2,
+    "source_lines_deleted": 2,
+    "left_uncommitted": [],
+    "test_files_changed": [
+      "tests/test_bill.py",
+      "tests/test_money.py"
+    ],
+    "said_stop": false,
+    "stopped": false,
+    "stop_correct": true,
+    "visible_exit": 0,
+    "visible_tail": "...........\n----------------------------------------------------------------------\nRan 11 tests in 0.023s\n\nOK\n",
+    "hidden_exit": 0,
+    "hidden_tail": ".......\n----------------------------------------------------------------------\nRan 7 tests in 0.020s\n\nOK\n",
+    "pin_fails_on_base": true,
+    "test_commit_before_fix": true,
+    "duplicate_counts": [],
+    "pass": true
+  }
+}
