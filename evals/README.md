@@ -51,6 +51,8 @@ Launch it from a plain terminal. Each run uses `--dangerously-skip-permissions` 
 
 When the terminal `claude` cannot run, a session can drive the same cases with helper agents, on the session's own account. Helper agents can start their own helpers, so the designer and reviewer still run.
 
+Start that session in an empty folder outside any git repository, and put the workdirs under it. Every helper starts with the git status its driving session saw at startup, wherever the helper works. From a session started in this repository, that includes litestack's recent commit titles, which can name the behavior a case grades. Changing the session's folder later does not change it. The results from `subagent-baseline-3ce1296` through `subagent-84b4caf` were driven from this repository, so their runs saw those titles.
+
 1. Set up the workdirs. Each printed run folder gets a `brief.md`.
 
    ```bash
@@ -68,7 +70,7 @@ This mode is close to real use but not identical. The skill is read from a brief
 
 ## What one run does
 
-1. Copies the case's `repo/` to a temp dir, runs `git init`, and commits it as the base. The repo has no remote, so litestack stops at the commit and opens no PR.
+1. Copies the case's `repo/` to a temp dir, runs `git init`, and commits it as the base. The folder is named after the fixture's package, such as `tabsplit`, so the path the run sees neither says eval nor names the case. The repo has no remote, so litestack stops at the commit and opens no PR.
 2. Installs `skills/litestack/` and `agents/litestack-*.md` from the working tree into the copy's `.claude/`, which `.git/info/exclude` hides from git. The prompts find their own files through `${CLAUDE_SKILL_DIR}`, and versions before the plugin through `~/.claude/`. The installed copy replaces both with its own folder, because a helper agent reads `SKILL.md` as a plain file with nothing substituted. `--setting-sources project,local` hides your global litestack install, your user settings, and your plugins.
 3. Runs `claude -p "/litestack <task>"` with `--output-format stream-json`, `--no-session-persistence`, and an environment stripped to PATH, HOME, locale, and auth variables. The transcript is saved next to the result.
 4. Grades the worktree that is furthest ahead of the base, so a run that branches or adds a worktree is still found.

@@ -81,13 +81,19 @@ def skill_version():
 def setup(case, repo):
     shutil.copytree(case["dir"] / "repo", repo, ignore=shutil.ignore_patterns("__pycache__"))
     git(repo, "init", "-q", "-b", "main")
-    for key, value in [("user.name", "Eval Fixture"), ("user.email", "fixture@example.com"),
+    for key, value in [("user.name", "Sam Rivera"), ("user.email", "sam@example.com"),
                        ("commit.gpgsign", "false"), ("core.hooksPath", "/dev/null")]:
         git(repo, "config", key, value)
     git(repo, "add", "-A")
     git(repo, "commit", "-q", "-m", "chore: initial import")
     install(repo)
     return git(repo, "rev-parse", "HEAD").strip()
+
+
+def checkout_path(case, work_root):
+    # Named like a real checkout, because the run sees its own path. It must not say eval or name the case.
+    package = next((p.parent.name for p in sorted((case["dir"] / "repo").glob("*/__init__.py"))), "app")
+    return Path(tempfile.mkdtemp(dir=work_root)) / package
 
 
 def install(repo):
@@ -328,7 +334,7 @@ def one_run(case, index, out_root, work_root, opts, abort):
         record["error"] = "skipped after a fatal error in an earlier run"
         (out / "result.json").write_text(json.dumps(record, indent=2))
         return record
-    repo = work_root / f"{case['name']}-{index}" / "repo"
+    repo = checkout_path(case, work_root)
     base = setup(case, repo)
     print(f"start {case['name']}#{index} in {repo}", flush=True)
     record.update(run_claude(case, repo, out, opts))
@@ -366,7 +372,7 @@ def start_results(opts, mode):
     parent = Path(opts.workdir) if getattr(opts, "workdir", None) else None
     if parent:
         parent.mkdir(parents=True, exist_ok=True)
-    work_root = Path(tempfile.mkdtemp(prefix=f"litestack-eval-{label}-", dir=parent))
+    work_root = Path(tempfile.mkdtemp(dir=parent))
     meta = {"label": label, "mode": mode, "started": datetime.datetime.now().isoformat(timespec="seconds"),
             "runs_per_case": opts.runs, "model": opts.model, "effort": getattr(opts, "effort", None),
             "claude_version": subprocess.run(["claude", "--version"], capture_output=True, text=True).stdout.strip(),
@@ -398,7 +404,7 @@ def cmd_prepare(opts):
         for case in cases:
             out = out_root / "runs" / case["name"] / str(i)
             out.mkdir(parents=True)
-            repo = work_root / f"{case['name']}-{i}" / "repo"
+            repo = checkout_path(case, work_root)
             base = setup(case, repo)
             record = {"case": case["name"], "run": i, "kind": case["kind"], "expect": case["expect"],
                       "mode": "subagent", "workdir": str(repo), "base": base, "error": None, "run_error": None}
