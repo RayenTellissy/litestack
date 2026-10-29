@@ -95,7 +95,7 @@ Spawn the reviewer per Subagents, and overlap it per Speed. The brief holds four
 
 Leave out your diagnosis, your design rationale, what you already checked, and each call you made where the request was silent. They anchor the reviewer, and it should find those calls on its own.
 
-The reviewer tries the request itself and returns a verdict. PASS means every request item behaves as asked. PASS+NOTES means the same, and the change settled details the request left open. FAIL means a request item does not behave as asked, or a finding is critical.
+The reviewer tries the request itself and returns a verdict. PASS means every request item behaves as asked. PASS+NOTES means the same, and the change settled details the request left open. FAIL means a request item does not behave as asked on the path the change built or fixed, or a finding is critical. A request item that fails the same way at the base, through code the change does not touch, is a note.
 
 Triage each finding as Act on or Dismissed, with a one-line reason. Judge it against the code, not the reviewer's word.
 
@@ -105,7 +105,7 @@ Triage each finding as Act on or Dismissed, with a one-line reason. Judge it aga
 - A finding about code the change did not touch is Dismissed, unless the change makes it worse.
 - Dismiss a correctness or security finding only with the code path that refutes it.
 - A review of only nits means the change is sound. Fix the cheap ones and dismiss the rest.
-- A request item that does not behave as asked is Act on. A departure from the request, or from what it names to match, is never Dismissed. Fix it, or list it under Needs your call in the PR with the reason you kept it.
+- A departure from the request, or from what it names to match, is never Dismissed. On the path the change built or fixed, it is Act on. When it comes from a separate mechanism the change does not touch, or fixing it needs a product choice or changes what existing callers get, do not widen the change. List it under Needs your call with what fixing it would take.
 - Each verdict note goes under Needs your call in the PR, unless you change the code to settle it from the request.
 
 A FAIL never ships. Fix every Act on, then rerun the playbook's verify step. If the fixes changed logic beyond the lines the findings named, run one more review with a new reviewer. Stop on any design-level finding, or on an Act on that survives the second round.

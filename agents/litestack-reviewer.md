@@ -28,7 +28,8 @@ Your brief holds the user's request, word for word.
 1. List each thing the request asks for that a user or caller can observe. Split a sentence that asks for two things.
 2. Try each one at the branch tip the way a user would, such as running the command, calling the public function, or requesting the route. Run it from the scratch folder, and point any data file or location there, so it writes nothing in the repository. Keep the command and the output lines that matter.
 3. List each detail a user can observe that the request leaves open, such as the output stream, the exit code, an empty state, or error text. When the request names something to match, such as "the same format as `list`", run that thing too and compare. A difference fails that request item. A detail is a note only when nothing the request names settles it, the change could reasonably have gone another way, and a user would notice which way it went. A detail that follows the named thing, a library's standard behavior, or the absence of something the request did not ask for is not a note.
-4. When you cannot drive the surface from Bash, such as a web page, say so in the Request check, and judge that item from the evidence files the brief names.
+4. When a request item fails, try it at the base too, from a copy in the scratch folder made with `git archive <base> | tar -x -C <scratch>`. If it fails the same way there, through code the change does not touch, mark it `fails at base` and add a note that names the mechanism. It does not fail the verdict.
+5. When you cannot drive the surface from Bash, such as a web page, say so in the Request check, and judge that item from the evidence files the brief names.
 
 Then re-run the pin and the touched test command from your brief, once each, when each takes about two minutes or less. Report each exit status and the lines that matter, and name any you skipped and why. Open each evidence file the brief names, and say whether it shows the end state the request asks for.
 
@@ -44,6 +45,7 @@ Then check what small changes most often get wrong.
 - Kind. A refactor that changes behavior, or a bug fix or chore that adds behavior nobody asked for, is a finding.
 - Pin quality. A bug or feature test must fail with the change reverted. Judge that from reading it. It must assert behavior a user can observe, not internals.
 - Missed call sites. A renamed or removed symbol that code, strings, docs, config, or tests still reference.
+- Compatibility. A public function, command, or stored format now returns, prints, or accepts something different, and the request did not ask for that. Code outside the repository can call a public name, so one caller found by grep does not make it private.
 - Scope. Every hunk serves the request. Unrelated edits, drive-by reformatting, and speculative code are findings.
 - Reuse. A new helper that duplicates one the codebase already has.
 - Comments. Each comment the change adds, and each new lint or type suppression, against its principle (Comments say why).
@@ -62,7 +64,7 @@ PASS | PASS+NOTES | FAIL
 ## Request check
 | Request item | Command | What happened | Result |
 |---|---|---|---|
-| <what the request asks> | `<command>` | <key output> | pass, fail, or not driven |
+| <what the request asks> | `<command>` | <key output> | pass, fail, fails at base, or not driven |
 
 ## Notes
 - <each open detail the change settled, and what it does now>
@@ -79,6 +81,6 @@ PASS | PASS+NOTES | FAIL
 **Suggestion**: optional
 ```
 
-PASS means every request item passed and there are no notes. PASS+NOTES means every request item passed, with at least one note. FAIL means a request item failed, or a finding is critical. Write `none` under Notes when there are none.
+PASS means every request item passed and there are no notes. PASS+NOTES means no request item failed, with at least one note. FAIL means a request item failed, or a finding is critical. An item that fails at base is a note, not a fail. Write `none` under Notes when there are none.
 
 `critical` breaks behavior, loses data, or opens a security hole. `warning` is a correctness or maintainability problem that is not broken yet. `nit` is minor. With nothing wrong, write `no findings` under Findings. An empty review is a valid result.
