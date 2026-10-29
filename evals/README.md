@@ -129,6 +129,24 @@ What it showed:
 - No run left files in the tree, and no reviewer left a scratch folder behind. Proof files sat under `.git/litestack/`.
 - The reviewers' notes ran from 9 to 11 items. Most restated what the request or `list` already settles, such as results in the same order as `list`. The reviewer now notes a detail only when the change could reasonably have gone another way and a user would notice. Rerun on the final code of `feature-search` runs 1 and 3 and `feature-due-date` run 2, the new reviewer cut the notes from 9, 10, and 11 to 1, 1, and 2. Verdicts and request checks stayed the same. The kept notes are the no-match output stream, the invalid-date error text, and whether an older version can read a file that holds due dates.
 
+`results/subagent-2a21e03/` runs the other four cases with the same reviewer, and `results/subagent-84b4caf/` reruns `bug-split-remainder` after the fix below.
+
+| Case | Pass | Median wall | Median output tokens | Reviewer wall |
+|---|---|---|---|---|
+| `bug-split-remainder` at `2a21e03` | 3/3 → 0/3 | 223 s → 569 s | 20k → 43k | 181 to 286 s |
+| `bug-split-remainder` at `84b4caf` | 3/3 → 3/3 | 223 s → 593 s | 20k → 30k | 137 to 495 s |
+| `refactor-report-dedupe` | 3/3 → 3/3 | 505 s → 408 s | 47k → 35k | 118 to 156 s |
+| `stop-gate-auth` | 3/3 → 3/3 | 97 s → 84 s | 9k → 8k | none |
+| `stop-oversized-i18n` | 3/3 → 3/3 | 81 s → 83 s | 7k → 8k | none |
+
+What it showed:
+
+- At `2a21e03`, every bug run also fixed repeated names, which lose a share because `split_even` keys a dict by name. The request says the total must "always" match, and the skill said a departure from the request is never dismissed. Each run changed `split_even` to return a list, which broke an existing caller in the hidden tests. The baseline runs found the same defect and left it out as a separate fix.
+- `84b4caf` keeps a second mechanism out of the change and lists it under Needs your call. A request item that fails the same way at the base is a note, and the reviewer checks that public functions keep their shape. All three runs then fixed only `allocate`, in two lines, and listed repeated names under Needs your call.
+- Bug fixes are still slower than the baseline. Authors spent 219 to 533 s before review, mostly on scripted sweeps of the real CLI, and reviewers spent 137 to 495 s. The baseline's whole run took 211 to 282 s.
+- Refactors were faster, and every reviewer there returned PASS with no notes, since "the output must not change" settles every detail. No refactor run left a `.pin/` folder.
+- Every stop run stopped at the right Gate line with no edits.
+
 The CLI-mode baseline is not recorded yet. The CLI login on this machine hit its weekly usage limit on 2026-10-28. Record it with the `run` command above, labelled `baseline-<commit>`, and commit `evals/results/<label>/`.
 
 ## Why not `claude plugin eval`

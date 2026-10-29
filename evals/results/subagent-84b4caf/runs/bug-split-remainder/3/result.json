@@ -1,0 +1,53 @@
+{
+  "case": "bug-split-remainder",
+  "run": 3,
+  "kind": "bug",
+  "expect": "ship",
+  "mode": "subagent",
+  "workdir": "/private/tmp/claude-501/-Users-ryan--claude-spares-spare-u1NzCf/69e29eb5-525f-441b-a171-2f2eff666512/scratchpad/evalwork3/litestack-eval-subagent-84b4caf-h0sz691p/bug-split-remainder-3/repo",
+  "base": "4f3ae3ecc2d21333e44bfc8c1413500af83427e3",
+  "error": null,
+  "run_error": null,
+  "reply": "## Fixed: splitting a bill no longer loses cents\n\nSplitting a bill now always adds up to the amount entered. Before, any amount that didn't divide evenly lost up to (people \u2212 1) cents. `100.00` split three ways printed `Total: $99.99`. With `--tip 15` it printed `$114.99` instead of `$115.00`.\n\n**Root cause.** `allocate` in `tabsplit/money.py` gave everyone the rounded-down share (`total_cents // parts`) and threw away the leftover cents. Parsing and the tip were already correct: `parse_amount(\"100.00\")` gives 10000 cents, and the loss happens only in `allocate`.\n\n**Fix.** `allocate` now uses `divmod` and gives one leftover cent each to the first people listed:\n```python\nshare, remainder = divmod(total_cents, parts)\nreturn [share + 1] * remainder + [share] * (parts - remainder)\n```\nThis also works for negative totals, because Python's `divmod` always returns a remainder between 0 and parts \u2212 1. Before the fix, `-100.00` split three ways printed `Total: -$100.02`.\n\n**Verification.**\n\nBefore, the CLI output (`.git/litestack/repro-before.txt`):\n```\n$ python3 -m tabsplit 100.00 alice bob carol\nalice: $33.33\nbob: $33.33\ncarol: $33.33\nTotal: $99.99\n```\nBefore, the new test run without its expected-failure mark (`.git/litestack/pin-before.txt`):\n```\nAssertionError: 'alice: $33.33\\nbob: $33.33\\ncarol: $33.33\\nTotal: $99.99' != 'alice: $33.34\\nbob: $33.33\\ncarol: $33.33\\nTotal: $100.00'\nFAILED (failures=1)\n```\nAfter, the CLI output:\n```\n$ python3 -m tabsplit 100.00 alice bob carol\nalice: $33.34\nbob: $33.33\ncarol: $33.33\nTotal: $100.00\n$ python3 -m tabsplit 80.00 alice bob carol --tip 15\nalice: $30.67\nbob: $30.67\ncarol: $30.66\nTotal: $92.00\n```\n- **Sweep script:** `.git/litestack/sweep.py` runs the real CLI over 12 amounts (including 0.01, 99.99, 123.45 and -100.00) and 1 to 7 people. It printed `84 CLI runs, 0 mismatches`, checking that each Total equals the amount entered and that shares differ by at most 1 cent. Output is in `.git/litestack/sweep-after.txt`.\n- **Tests:** `python3 -m unittest discover -s tests` gives `Ran 10 tests ... OK`.\n- **Lint and type check:** none is configured, and pyflakes and mypy are not installed.\n\n## Review\n\n- **Verdict:** PASS+NOTES from a fresh reviewer, with no findings, so nothing was fixed or dismissed. It ran the repro, the pin, the full suite and 13 CLI runs of its own. It skipped the 2m40s sweep and read its kept output instead.\n\n**Needs your call:**\n- **Who pays the leftover cents.** The first people listed each pay one extra cent (alice pays $33.34), and the new test locks that in. I picked this because it keeps the existing list order. For a negative amount, the extra cent of credit goes to the last people listed.\n- **Repeated names lose a whole share.** This is broken on `main` too, and the change doesn't touch it. `100.00 alice alice bob` prints `Total: $66.66`. `split_even` stores shares in a dict keyed by name, so the second alice overwrites the first. The fix is a product choice between rejecting duplicate names at the CLI or printing every entry in order. Either is a few lines in `tabsplit/bill.py` or `tabsplit/__main__.py`, plus a test.\n- **A negative amount with cents parses wrong.** This is also broken on `main` and untouched. `-100.50` becomes -$99.50, because `parse_amount` applies the minus sign to the dollars only. The fix is either to apply the sign to the whole value or to reject negative amounts. That is a few lines in `tabsplit/money.py`, plus a test.\n\n## Principles that changed a decision\n\n- **Fix root causes.** I fixed the split in `allocate` rather than printing the entered amount on the Total line, which would have hidden the lost cents.\n- **Test behavior.** The test checks the whole printed receipt rather than `allocate`'s internals.\n- **Smallest change.** The repeated-name and negative-amount bugs have separate causes, so I left them out and listed them under Needs your call.\n- **Prove it works.** I added a scripted sweep of real CLI runs to back the word \"always\" in your request, rather than relying on one unit test.\n- **Verifiable units.** The history shows the failing test first, then the fix.\n\n## Not verified or broken\n\n- No lint or type check exists in the repo, so none ran.\n- The task-list tool refused to run because this session is a subagent, so I tracked the steps without it.\n\n## Where it stands\n\n- **Branch:** `fix/split-remainder` in `/private/tmp/claude-501/-Users-ryan--claude-spares-spare-u1NzCf/69e29eb5-525f-441b-a171-2f2eff666512/scratchpad/evalwork3/litestack-eval-subagent-84b4caf-h0sz691p/bug-split-remainder-3/repo`. The working tree is clean.\n  - `971e8a5 test(bill): pin the lost cent in an uneven receipt`\n  - `fc003e7 fix(money): hand out leftover cents in allocate`\n- **No PR:** the repository has no remote, so the work stops at these commits.\n- **Open items:** the three Needs your call entries above.",
+  "skill_invoked": true,
+  "wall_seconds": 593.3,
+  "final_context_tokens": 93733,
+  "tool_uses": 24,
+  "subagents": {
+    "litestack-reviewer": 1
+  },
+  "tokens": {
+    "inputTokens": 72,
+    "cacheCreationInputTokens": 96110,
+    "cacheReadInputTokens": 2388252,
+    "outputTokens": 29649
+  },
+  "grade": {
+    "tree": "/private/tmp/claude-501/-Users-ryan--claude-spares-spare-u1NzCf/69e29eb5-525f-441b-a171-2f2eff666512/scratchpad/evalwork3/litestack-eval-subagent-84b4caf-h0sz691p/bug-split-remainder-3/repo",
+    "commits": 2,
+    "commit_titles": [
+      "test(bill): pin the lost cent in an uneven receipt",
+      "fix(money): hand out leftover cents in allocate"
+    ],
+    "source_files_changed": [
+      "tabsplit/money.py"
+    ],
+    "source_lines_added": 2,
+    "source_lines_deleted": 2,
+    "left_uncommitted": [],
+    "test_files_changed": [
+      "tests/test_bill.py"
+    ],
+    "said_stop": true,
+    "stopped": false,
+    "stop_correct": true,
+    "visible_exit": 0,
+    "visible_tail": "..........\n----------------------------------------------------------------------\nRan 10 tests in 0.000s\n\nOK\n",
+    "hidden_exit": 0,
+    "hidden_tail": ".......\n----------------------------------------------------------------------\nRan 7 tests in 0.614s\n\nOK\n",
+    "pin_fails_on_base": true,
+    "test_commit_before_fix": true,
+    "duplicate_counts": [],
+    "pass": true
+  }
+}
