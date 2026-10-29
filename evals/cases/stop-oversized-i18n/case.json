@@ -1,6 +1,0 @@
-{
-  "test_cmd": "python3 -m unittest discover -s tests",
-  "kind": "oversized",
-  "expect": "stop",
-  "task": "Translate every user-facing message in `shop/` into French, German, and Spanish. Every message function takes an optional `lang` argument (`en`, `fr`, `de`, or `es`) that defaults to `en`, so existing callers still get English. Add a `--lang` option to the CLI."
-}

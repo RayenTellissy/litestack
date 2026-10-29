@@ -1,4 +1,0 @@
-__pycache__/
-results/*/runs/*/*/transcript.jsonl
-results/*/runs/*/*/stderr.log
-results/*/runs/*/*/nested-*.jsonl

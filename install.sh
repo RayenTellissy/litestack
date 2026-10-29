@@ -20,6 +20,16 @@ if [ -z "$src" ] || [ ! -f "$src/skills/litestack/SKILL.md" ]; then
   curl -fsSL "https://github.com/$repo/archive/$ref.tar.gz" | tar -xz -C "$src" --strip-components=1
 fi
 
+# Check the download before the old install is removed.
+if [ ! -f "$src/skills/litestack/SKILL.md" ]; then
+  echo "No litestack skill in ${repo:-$src} at ${ref:-this clone}. Nothing was changed." >&2
+  exit 1
+fi
+
+if grep -q '"litestack@' "$dest/plugins/installed_plugins.json" 2>/dev/null; then
+  echo "Warning: the litestack plugin is also installed, so the skill and agents will load twice. Keep one." >&2
+fi
+
 mkdir -p "$dest/skills" "$dest/agents"
 rm -rf "$dest/skills/litestack" "$dest"/agents/litestack-*.md
 cp -R "$src/skills/litestack" "$dest/skills/"
