@@ -1,0 +1,54 @@
+{
+  "case": "refactor-report-dedupe",
+  "run": 3,
+  "kind": "refactor",
+  "expect": "ship",
+  "mode": "subagent",
+  "workdir": "/private/tmp/claude-501/-Users-ryan--claude-spares-spare-u1NzCf/69e29eb5-525f-441b-a171-2f2eff666512/scratchpad/evalwork2/litestack-eval-subagent-2a21e03-koznip59/refactor-report-dedupe-3/repo",
+  "base": "e122dd57b879feea32abf353b8039bce263155cc",
+  "error": null,
+  "run_error": null,
+  "reply": "**Litestack refactor. Committed locally. No PR, because the repository has no remote.**\n\nNothing changes for code that calls `daily_summary`, `weekly_summary` or `monthly_summary`. Across 2478 recorded cases the output is byte-for-byte the same as before (measured). The grouping, totals and table layout now live in one place, so a future change to them is one edit instead of three.\n\n**What changed**\n- A new private function, `_summary(entries, period_key)` in `ledger/reports.py`, now holds the only copy of the grouping, the per-category totals, the header and table rows, the total row and the \"No entries.\" fallback.\n- The three public functions are now one line each and only supply how to label a period:\n  - Daily passes `lambda day: day.isoformat()`.\n  - Weekly passes a new `_iso_week` helper.\n  - Monthly passes the `YYYY-MM` format.\n- Function names, signatures and `parse_line` are unchanged. One file changed, with 12 lines added and 34 removed.\n\n**The pin (what had to stay the same)**\n- The existing unit tests, `python3 -m unittest discover -s tests`, which have 5 tests.\n- A script that saves every summary's output so before and after can be compared: `.git/litestack/record_outputs.py`.\n  - It runs all three summaries on 13 fixed inputs and 400 seeded random entry lists. Each list is passed both as a list and as a single-use iterator.\n  - The fixed inputs cover dates where the ISO week belongs to a different year (such as `2020-W53` and `2025-W01`), `datetime` values as days, rounding edge cases, the order floats are added in, long and empty category names, years before 1000, and three error cases.\n  - I saved the baseline at `e122dd5` before any edit. A second run matched it exactly.\n- I checked that the script can catch a wrong refactor by running it against two deliberately broken copies, made outside the working tree:\n  - Using `date.isoformat` as the daily key changed 3634 output lines, because `datetime` days would lose their time part.\n  - Adding up the total from the entries, instead of from the category subtotals, changed 12 output lines.\n  - I did not run the unit tests against these broken copies. From their inputs I infer they would pass both.\n\n**Proof the output did not change**\n- The unit tests reported `Ran 5 tests ... OK` after each of the two steps.\n- Comparing `.git/litestack/baseline.txt` with `.git/litestack/after.txt` found no differences across 144400 lines. The comparison after the first step, `.git/litestack/step1.txt`, was also identical.\n\n**Is it easier to read?**\n- Before, the file was 65 lines and held three 17-line copies. A reader had to compare all three to find the one line that differed.\n- After, it is 43 lines with one shared body. Each public function adds one step into `_summary`.\n- Overall it is easier to read, so the change stays.\n\n**Shipped and reverted**\nCommit `14f559a` shipped. Nothing was reverted, and there is no new behavior.\n\n**Review**\n- The reviewer's verdict was PASS, with no findings and no notes. Nothing was fixed and nothing was dismissed.\n- The reviewer rebuilt the baseline from `e122dd5` on its own and got the same bytes. The branch tip also matched exactly.\n- It also tried inputs the script does not cover and got the same output and the same error messages before and after:\n  - a `date` subclass that overrides `isoformat` and `isocalendar`\n  - `Decimal`, NaN and infinite amounts\n  - a generator that fails partway through\n  - `None` passed as the whole input\n- Needs your call: none. \"The output must not change\" settles every detail a caller could see.\n\n**Principles that changed a decision**\n- **Model the domain.** The only difference between the three functions is how they label a period. So the helper takes one labelling function, rather than being split into separate grouping, totals and formatting helpers.\n- **Smallest change.** The shared body was moved without rewriting it, so the diff is easy to review. The inline import in `parse_line` stayed, and no tests were added to the repository.\n- **Prove it works.** Reading the original code showed that calling `entry.day.isoformat()` on the value itself matters, because a `datetime` day gives a different string. So the daily key stays `lambda day: day.isoformat()` and not the shorter `date.isoformat`. The saved-output comparison covers this and the order floats are added in, and the broken-copy run shows it would catch either mistake.\n- **Reader load.** I compared before and after, confirmed the code is easier to read, and kept the change.\n\n**Skipped steps**\n- Design step: skipped. Both helpers are private to `reports.py`, no public signature changed, and no code moved between modules.\n- Subtract first: skipped. Nothing was dead, and the `Entry` import is still used by `parse_line`.\n\n**Not verified**\n- Only Python 3.9.6 is installed, so I ran nothing on other versions. `_iso_week` unpacks the result the same way the original did, so I infer it needs no newer Python.\n- No linter is installed. `py_compile` passed.\n- The task-list tool refused the call because this run is a subagent. I followed the eight Refactor steps in order without it.\n\n**Where it is**\n- No PR, because the repository has no remote.\n- Branch `refactor/report-summary-dedupe`, commit `14f559a refactor(reports): dedupe period summaries into _summary`, on top of `e122dd5`.\n- The working tree is clean. The comparison script and its saved outputs are in `.git/litestack/`.\n- Nothing is open.",
+  "skill_invoked": true,
+  "wall_seconds": 408.4,
+  "final_context_tokens": 102425,
+  "tool_uses": 20,
+  "subagents": {
+    "litestack-reviewer": 1
+  },
+  "tokens": {
+    "inputTokens": 52,
+    "cacheCreationInputTokens": 144391,
+    "cacheReadInputTokens": 1775054,
+    "outputTokens": 37023
+  },
+  "grade": {
+    "tree": "/private/tmp/claude-501/-Users-ryan--claude-spares-spare-u1NzCf/69e29eb5-525f-441b-a171-2f2eff666512/scratchpad/evalwork2/litestack-eval-subagent-2a21e03-koznip59/refactor-report-dedupe-3/repo",
+    "commits": 1,
+    "commit_titles": [
+      "refactor(reports): dedupe period summaries into _summary"
+    ],
+    "source_files_changed": [
+      "ledger/reports.py"
+    ],
+    "source_lines_added": 12,
+    "source_lines_deleted": 34,
+    "left_uncommitted": [],
+    "test_files_changed": [],
+    "said_stop": false,
+    "stopped": false,
+    "stop_correct": true,
+    "visible_exit": 0,
+    "visible_tail": ".....\n----------------------------------------------------------------------\nRan 5 tests in 0.000s\n\nOK\n",
+    "hidden_exit": 0,
+    "hidden_tail": "..\n----------------------------------------------------------------------\nRan 2 tests in 0.001s\n\nOK\n",
+    "pin_fails_on_base": null,
+    "test_commit_before_fix": false,
+    "duplicate_counts": [
+      1,
+      2,
+      1
+    ],
+    "pass": true
+  }
+}

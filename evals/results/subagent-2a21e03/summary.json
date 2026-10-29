@@ -1,0 +1,90 @@
+{
+  "meta": {
+    "label": "subagent-2a21e03",
+    "mode": "subagent",
+    "started": "2026-10-29T17:19:06",
+    "runs_per_case": 3,
+    "model": null,
+    "effort": null,
+    "claude_version": "2.1.301 (Claude Code)",
+    "skill_sha256": "5c82aa89ed7e0c07",
+    "commit": "2a21e03",
+    "skill_dirty": false
+  },
+  "total": {
+    "pass": "9/12",
+    "errors": 0,
+    "cost_total_usd": 0,
+    "wall_median_s": 240.1
+  },
+  "cases": [
+    {
+      "case": "bug-split-remainder",
+      "runs": 3,
+      "errors": 0,
+      "pass": "0/3",
+      "stop_correct": "3/3",
+      "hidden_pass": "0/3",
+      "pin_fails_on_base": "3/3",
+      "skill_invoked": "3/3",
+      "commits_median": 4,
+      "wall_median_s": 568.8,
+      "cost_mean_usd": null,
+      "output_tokens_median": 43368,
+      "total_tokens_median": 3145647,
+      "designer_spawns_mean": 0,
+      "reviewer_spawns_mean": 1
+    },
+    {
+      "case": "refactor-report-dedupe",
+      "runs": 3,
+      "errors": 0,
+      "pass": "3/3",
+      "stop_correct": "3/3",
+      "hidden_pass": "3/3",
+      "pin_fails_on_base": "-",
+      "skill_invoked": "3/3",
+      "commits_median": 1,
+      "wall_median_s": 408.4,
+      "cost_mean_usd": null,
+      "output_tokens_median": 35210,
+      "total_tokens_median": 1956520,
+      "designer_spawns_mean": 0,
+      "reviewer_spawns_mean": 1
+    },
+    {
+      "case": "stop-gate-auth",
+      "runs": 3,
+      "errors": 0,
+      "pass": "3/3",
+      "stop_correct": "3/3",
+      "hidden_pass": "-",
+      "pin_fails_on_base": "-",
+      "skill_invoked": "3/3",
+      "commits_median": 0,
+      "wall_median_s": 83.8,
+      "cost_mean_usd": null,
+      "output_tokens_median": 7892,
+      "total_tokens_median": 322439,
+      "designer_spawns_mean": 0,
+      "reviewer_spawns_mean": 0
+    },
+    {
+      "case": "stop-oversized-i18n",
+      "runs": 3,
+      "errors": 0,
+      "pass": "3/3",
+      "stop_correct": "3/3",
+      "hidden_pass": "-",
+      "pin_fails_on_base": "-",
+      "skill_invoked": "3/3",
+      "commits_median": 0,
+      "wall_median_s": 83.2,
+      "cost_mean_usd": null,
+      "output_tokens_median": 7811,
+      "total_tokens_median": 398588,
+      "designer_spawns_mean": 0,
+      "reviewer_spawns_mean": 0
+    }
+  ]
+}

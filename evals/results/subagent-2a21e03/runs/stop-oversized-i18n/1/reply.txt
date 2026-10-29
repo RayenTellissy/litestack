@@ -1,0 +1,34 @@
+I stopped before making any edits. This task is too big for litestack. The Gate fails, so nothing changed and no branch, commit or PR exists.
+
+**The Gate line that failed.** "The change stays in one feature area, at most about 6 non-test files and 300 changed non-test lines."
+- Measured with `grep -c '^def '`: `shop/` has 100 message functions. That is 10 in each of 10 area modules: cart, catalog, checkout, coupons, inventory, orders, returns, reviews, shipping and wishlist.
+- Inferred from those counts: the change touches those 10 modules plus `shop/cli.py`, which is 11 non-test files. It adds 300 translated strings (100 messages in 3 languages) and changes 100 signatures. That is at least about 400 changed non-test lines. Both numbers are over the limit.
+- The README says the code is "one module per area". So this change covers 10 feature areas, not one.
+
+The other Gate lines are fine. A `lang` argument that defaults to `en` only adds to the API, and existing callers still get English. No auth, payment or concurrency code is on the changed path.
+
+**What the task needs that litestack does not do.**
+- **A design choice with real tradeoffs.** It covers where translations live (a table in each area module, one catalog per language, or gettext `.po` files), and what a direct call does with an unsupported `lang`. It also covers whether amounts follow local formatting. Ten messages print `{amount:.2f} EUR` (measured). French and German usually write that as `12,50 EUR`. All 10 modules would share whatever is chosen, so it should be decided once and up front.
+- **A split plan.** Each area module needs about 70 to 80 changed lines. That is a guess based on 10 messages in 4 languages plus 10 signature changes.
+- **Translator review.** 300 strings in French, German and Spanish need a check by native speakers. Tests cannot do that.
+
+**A split that would fit litestack.**
+1. Feature. The shared translation shape and a `lang` argument for `cart` only, about 2 files. This settles the pattern on one area.
+2. Feature, three times. The other 9 areas in batches of 3 modules, each batch about 225 lines (guess).
+3. Feature. `--lang` in `shop/cli.py`, validated once with argparse `choices`. It ships last so that no version has a `--lang` that fails on most areas.
+
+**What I'm handing over.**
+- **Pin.** None. I stopped at the first step, Read the subsystem, before writing the acceptance check.
+- **Current state.** `python3 -m unittest discover -s tests` printed `Ran 5 tests in 0.047s` and `OK`.
+- **What I learned.**
+  - Each area module is 10 plain functions that return f-strings. There is no shared helper.
+  - `shop/cli.py` maps area names to modules and calls `getattr(module, message)(*values)`. A `--lang` flag would pass `lang=` there as a keyword.
+  - `tests/test_messages.py` covers cart, checkout, orders and shipping, plus one CLI call. All of it is in English.
+
+**Principles that changed a decision.**
+- Experience first moved `--lang` to the last slice. That way the flag never works for one area and fails for the rest.
+- Explain the number decided the evidence. I measured the counts of functions, modules and currency messages. The line totals are labeled as inferred or guessed.
+
+**Not verified.** The per-area line estimate is a guess, because I built no prototype to measure it.
+
+**Branch state.** I created no branch. The repo is still on `main` at `4eb0597`, with no new commits and a clean working tree.

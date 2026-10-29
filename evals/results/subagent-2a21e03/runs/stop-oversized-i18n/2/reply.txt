@@ -1,0 +1,55 @@
+**Stopped at the Gate. This request is too big for litestack.**
+
+Nothing changed for anyone. I edited no files, made no branch, and made no commits. The repo is still on `main` with a clean tree.
+
+**What fired.** This Gate line: "The change stays in one feature area, at most about 6 non-test files and 300 changed non-test lines." I measured it with an AST count over `shop/*.py`:
+- There are 10 message modules with 10 functions each, so 100 message functions.
+- Each function needs a `lang` parameter, and `cli.py` needs `--lang`. That is 11 non-test files. The limit is about 6.
+- 100 messages in 3 languages makes 300 new translated strings. Add the 100 signature changes and the floor is 400 changed non-test lines. The limit is about 300. That 400 is a lower bound from the count, not a diff estimate. A lookup helper, the CLI flag, and tests would add more.
+- The README calls each module its own area ("one module per area"), so the change covers 10 areas, not one.
+
+**What the task needs that litestack does not do.**
+- A plan to split the work. Litestack ships one small slice per run.
+- Design calls with real tradeoffs. I found these in the code:
+  - **Number format.** Every amount prints as `12.50 EUR`. French, German and Spanish normally write `12,50 EUR`.
+  - **Plurals.** `catalog.found(1)` already prints "Found 1 products." Each new language needs its own plural rule or inherits the same flaw.
+  - **Values that arrive in English.** `orders.status("A-17", "shipped")` puts the caller's English word into the message. A translated sentence would still print "shipped".
+  - **Grammatical gender.** `cart.gift(item)` and `inventory.reserved(name)` insert a product name. French and Spanish adjectives have to agree with its gender.
+  - **Unknown `lang`.** It could raise an error or fall back to English.
+  - **Where the strings live.** Inline in each function, one table per module, or gettext catalogs.
+- A native speaker to review 300 strings. The review step cannot judge translation quality.
+
+**Suggested path.** Settle the calls above. Then run litestack once for the `lang` plumbing, `--lang`, and one area such as `cart`. I estimate about 3 files and 50 lines (inferred from `cart.py` having 10 functions). After that, one run per remaining area at about 1 file and 40 lines each (inferred).
+
+**Pin and repro.** Run on `main` before any edit, output verbatim:
+```
+$ python3 -m unittest discover -s tests
+Ran 5 tests in 0.038s
+
+OK
+$ python3 -c "from shop import cart; print(cart.add(\"mug\", 2, lang=\"fr\"))"
+TypeError: add() got an unexpected keyword argument 'lang'
+$ python3 -m shop --lang fr cart add mug 2
+shop: error: argument area: invalid choice: 'fr' (choose from 'cart', 'catalog', 'checkout', 'coupons', 'inventory', 'orders', 'returns', 'reviews', 'shipping', 'wishlist')
+$ python3 -m shop cart add mug 2
+Added 2 x mug to your cart.
+```
+The scripts and their saved output are in the git dir, outside the working tree:
+- `/private/tmp/claude-501/-Users-ryan--claude-spares-spare-u1NzCf/69e29eb5-525f-441b-a171-2f2eff666512/scratchpad/evalwork2/litestack-eval-subagent-2a21e03-koznip59/stop-oversized-i18n-2/repo/.git/litestack/gate_size.py` counts the files and functions. Its output is in `gate_size.out` in the same folder.
+- `/private/tmp/claude-501/-Users-ryan--claude-spares-spare-u1NzCf/69e29eb5-525f-441b-a171-2f2eff666512/scratchpad/evalwork2/litestack-eval-subagent-2a21e03-koznip59/stop-oversized-i18n-2/repo/.git/litestack/pin.sh` reruns the checks above. Its output is in `pin.out` in the same folder.
+
+**Task list.**
+- Read the subsystem: done. The Gate failed.
+- Name the data shape, Design it, Write the acceptance check, Build against the sketch, Verify, Review then ship: skipped because of the Gate Stop.
+
+**Review.** None ran because nothing was built. No reviewer verdict and no PR.
+
+**Principles that changed a decision.**
+- **Explain the number** made me report 400 lines as a counted floor rather than an estimate of the diff.
+- **Build the lever** made me script the count so it reruns the same way.
+
+**A tool that broke.** The task-list tool refuses calls from a subagent session. That is why the task list is in this reply.
+
+**Branch state.** I made no branch, no commits, and no uncommitted edits. The repo is on `main` at `9623013`.
+
+**Open item.** Choose the number format, plural handling, how English values like order status get translated, the fallback for unknown `lang`, and where the strings live. After that the first slice fits litestack.

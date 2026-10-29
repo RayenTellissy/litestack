@@ -1,0 +1,71 @@
+I fixed it. `python3 -m tabsplit 100.00 alice bob carol` now prints `Total: $100.00`, with alice paying $33.34 and bob and carol $33.33 each. The total now matches the bill for every amount and group size I tried. That includes a name listed twice, which was a second way the same bug showed up.
+
+**What was broken.** The receipt total could come out below the bill in two ways:
+- **Uneven splits:** splitting $10.00 six ways printed `Total: $9.96`.
+- **A repeated name:** `90.00 alice alice bob` printed only two lines and `Total: $60.00`.
+
+**Root cause.** Two places in the code, each confirmed by running it:
+- `allocate` in `tabsplit/money.py` rounded every share down and threw the leftover cents away. `allocate(10000, 3)` returned `[3333, 3333, 3333]`, so 1 cent was lost.
+- `split_even` in `tabsplit/bill.py` stored shares keyed by name. A second "alice" replaced the first one's share, and that share was dropped.
+
+**Fix.**
+- `allocate` now gives the leftover cents one at a time to the first people listed.
+- `split_even` now keeps an ordered list of (name, share) pairs, so every person entered keeps their share. `receipt` is its only caller.
+
+**Verification.** Before:
+```
+$ python3 -m tabsplit 100.00 alice bob carol
+alice: $33.33
+bob: $33.33
+carol: $33.33
+Total: $99.99
+$ python3 -m tabsplit 90.00 alice alice bob
+alice: $30.00
+bob: $30.00
+Total: $60.00
+```
+After:
+```
+$ python3 -m tabsplit 100.00 alice bob carol
+alice: $33.34
+bob: $33.33
+carol: $33.33
+Total: $100.00
+$ python3 -m tabsplit 90.00 alice alice bob
+alice: $30.00
+alice: $30.00
+bob: $30.00
+Total: $90.00
+$ python3 -m tabsplit 10.00 a b c d e f
+... a-d $1.67, e-f $1.66
+Total: $10.00
+```
+- **Full CLI sweep:** a script ran the CLI 1,012 times, across amounts from $0.00 to $1,000,000.07, 1 to 12 people, repeated names and four tip settings. It checked each receipt. On the old code 835 runs failed; on the new code none did (`runs=1012 failures=0`).
+- **Tests:** all 12 pass, 3 of them new. Each new test was committed first as an expected failure, and I kept its failing output from a run without the mark. Each of the 4 commits passes its own tests.
+- **Tips:** with `--tip`, the total is still the bill plus the tip, as the README documents. `80.00 alice bob --tip 15` prints `Total: $92.00`.
+
+**Review.** The independent reviewer returned PASS+NOTES with no findings, so there was nothing to fix or dismiss. It reran the repro, other amounts, repeated names and tips itself. It started the sweep but stopped it before it finished, and confirmed the saved sweep output instead. Its two notes are the open decisions below.
+
+**Decisions for you:**
+- **Who pays the extra cents:** the first people listed. For $100.00 split three ways, alice pays $33.34. The last people, or some other spread, would also work.
+- **A repeated name:** each entry gets its own line and share. Merging them into one line (alice: $66.67) or rejecting repeated names were the other options.
+
+**Principles that changed a decision:**
+- **Model the domain.** The shares are an ordered list of people where names can repeat, so I used a list of pairs instead of a dict keyed by name.
+- **Fix root causes.** I fixed the share calculation itself. The Total line still adds up the printed shares rather than repeating the amount entered, which would have hidden the bug.
+- **Smallest change.** Each fix changes only two to three lines of code.
+- **Verifiable units.** Each fix comes after a commit with its failing test.
+
+**Not covered.** Two input-parsing problems remain, and both existed before:
+- A negative amount comes out wrong: `-10.50` prints `Total: -$9.50` (the reviewer measured this).
+- Fractions of a cent are cut off: `100.009` prints `$100.00`.
+
+They are about reading the amount, not splitting it, so I left them out. Fixing them would mean deciding between rejecting such input and rounding it. The repo has no lint or type-check setup, so neither ran.
+
+**Where it stands.** There is no PR because the repository has no remote. The work is on branch `fix/split-remainder`, off `main` at `e534f53`, with nothing uncommitted:
+- `d6eeca6 test(money): pin allocate dropping the split remainder`
+- `7b69af3 fix(money): hand the split remainder to the first parts in allocate`
+- `04531a1 test(bill): pin split_even dropping a repeated name`
+- `5436d48 fix(bill): keep one share per person in split_even`
+
+The sweep script `sweep.py`, its saved output `sweep-output.txt` and the before/after repro output are in `/private/tmp/claude-501/-Users-ryan--claude-spares-spare-u1NzCf/69e29eb5-525f-441b-a171-2f2eff666512/scratchpad/evalwork2/litestack-eval-subagent-2a21e03-koznip59/bug-split-remainder-1/repo/.git/litestack/`.

@@ -1,0 +1,50 @@
+The three reports now share one implementation, and their output is unchanged. `daily_summary`, `weekly_summary` and `monthly_summary` give the same strings as before. A fix to the grouping, totals or table format now goes in one place instead of three.
+
+**What changed**
+- The grouping, per-category totals, table rows, total row and `"No entries."` fallback are now in one private function, `_summary(entries, period_of)`, in `ledger/reports.py`.
+- Each public function keeps its name and signature. It passes only its rule for turning a day into a period:
+  - daily uses `day.isoformat()`
+  - weekly uses the ISO year and week, formatted `YYYY-Www`
+  - monthly uses `YYYY-MM`
+- The diff is 11 lines added and 35 removed, in one file.
+
+**The pin**
+- **Existing tests:** `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests` passed 5 tests before and after the change.
+- **Comparison script:** the tests left gaps, so I added `.git/litestack/compare_summaries.py`. It runs the module from `main` and the working tree on the same inputs and makes 49 comparisons. The inputs cover:
+  - empty lists and generators, and input passed as a one-shot generator
+  - unsorted input and ISO-week year boundaries
+  - float summation order, wide and negative values, and `datetime` days
+  - the error type and message for bad input
+- **It can fail:** I changed the total to sum in sorted category order, and the script reported `1 differ` (`total 1.00` became `total 0.00`). Then I restored the file.
+
+**Proof the output is the same**
+- After every step the tests passed and the script printed `49 comparisons against main, 0 differ`.
+- The saved runs from before any edit (`compare-before.txt`) and at the branch tip (`compare-after.txt`) are byte-identical. Both are in `.git/litestack/`.
+
+**Reader load**
+- `reports.py` went from 65 lines to 41.
+- The `"No entries."` branch went from 3 copies to 1, and the table format strings from 6 to 2.
+- Each report now has one extra call into `_summary`. That buys one copy of the logic where there were three that had to stay in step.
+
+**What shipped and what I reverted:** one commit shipped. Nothing was reverted, and there is no new behavior.
+
+**Review**
+- The reviewer's verdict was PASS, with no findings and no notes. It reran both checks with the same results. It also ran its own fuzz comparison of 9007 random cases against `main`, and none differed. Its working-tree fingerprint stayed clean.
+- No findings to fix, none dismissed, and nothing goes under Needs your call.
+
+**Principles that changed a decision**
+- **Model the domain:** the only thing that differs between the reports is the day-to-period rule. So that rule is the single parameter. I did not split grouping, totals and formatting into separate helpers.
+- **Smallest change:** I kept the existing two passes, grouping first and totals second. Merging them would change which error bad input raises first, and the pin checks that error.
+- **Smallest change:** daily passes `lambda day: day.isoformat()` rather than `date.isoformat`. The unbound method would drop the time from `datetime` days. The pin has a case for this.
+- **Smallest change:** I left `parse_line`'s local `datetime` import alone because it is outside the request.
+- **Prove it works:** the comparison against `main` is a script that reruns the same way. Its output is kept, and the mutation run shows it can fail.
+- **Design step and Subtract first were skipped:**
+  - The design step was not needed. There is no new type or module, and no signature another module calls changes. `_summary` is private.
+  - The touched code had nothing dead to remove first.
+
+**Not verified**
+- No linter or type checker is configured or installed, so none ran.
+- The checks ran only on Python 3.9.6.
+- The task-list tool refused to run inside this subagent, so I kept the playbook steps in order without it.
+
+**Where it stands:** there is no PR because the repository has no remote. The work is on branch `refactor/report-summaries`, commit `d0323ff`, `refactor(reports): share _summary across daily, weekly, and monthly summaries`. The tree is clean. Nothing is left open.
