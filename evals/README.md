@@ -112,6 +112,23 @@ What it showed:
 - One reviewer wrote a file outside its repo, though its prompt says never to create a file. Another run wrote a check script outside its repo.
 - All three refactor runs left an untracked `.pin/` folder of comparison scripts and recorded output.
 
+## Reviewing against the request
+
+`results/subagent-a745e58/` reruns the two feature cases after the reviewer started to try the user's request itself and return a verdict. It was recorded in helper-agent mode on 2026-10-29, with the skill as of `a745e58` (skill hash `47efea2e60581271`). It passed 6 of 6.
+
+| Case | Pass | Median wall | Median output tokens | Reviewer wall |
+|---|---|---|---|---|
+| `feature-search` | 1/3 → 3/3 | 400 s → 307 s | 36k → 29k | 94 to 131 s |
+| `feature-due-date` | 3/3, first run | 750 s | 74k | 185 to 258 s |
+
+What it showed:
+
+- Every `feature-search` run printed `No matching tasks.` to stdout. The authors chose it before review, and one cites the rule that open details follow what the request names. So that rule, not the reviewer, fixed this case.
+- The `feature-search` speedup mostly comes from `df4e5c1`, which skips the design step there. The baseline spawned a designer in all three runs, and this run spawned none. The baseline kept no reviewer transcripts, so the reviewer's own time cannot be compared.
+- Every reviewer returned PASS+NOTES. In two `feature-due-date` runs it found that Python 3.11 and later accept dates such as `20261101`, by running the CLI on 3.13. The author fixed both.
+- No run left files in the tree, and no reviewer left a scratch folder behind. Proof files sat under `.git/litestack/`.
+- The Needs your call lists ran from 4 to 9 items. Some restate what the request already settles, such as results in the same order as `list`.
+
 The CLI-mode baseline is not recorded yet. The CLI login on this machine hit its weekly usage limit on 2026-10-28. Record it with the `run` command above, labelled `baseline-<commit>`, and commit `evals/results/<label>/`.
 
 ## Why not `claude plugin eval`

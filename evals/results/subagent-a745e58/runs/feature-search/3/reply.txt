@@ -1,0 +1,78 @@
+I built the `search` command on branch `feat/search-command` and committed it locally. There is no PR because the repository has no remote. Each part of your request works when run against the real CLI.
+
+## What you can do now
+- `python3 -m tasks search <text>` lists open tasks whose title contains the text, ignoring case.
+- Each match prints in the same line format as `list`.
+- `--all` also shows done tasks.
+- With no match, it prints `No matching tasks.` and exits 1.
+- The next maintainer gets one handler, `cmd_search`, next to `cmd_list` in `tasks/cli.py`. They also get three tests and two README example lines.
+
+## Shape
+- There is no new type or stored field.
+- `cmd_search` loads the existing `Task` list. It keeps tasks that pass two filters. The task must be open, unless `--all` is set. Its title, with case ignored, must contain the search text.
+- Each match prints through `Task.line()`, so `search` and `list` share one formatter.
+- The handler is written the same way as `cmd_list`.
+- I skipped the design step because nothing new crosses a module boundary. `cmd_list` served as the pattern instead.
+
+## Acceptance check
+Three tests in `tests/test_cli.py` cover these cases:
+- a title match that ignores case,
+- done tasks hidden unless `--all` is given,
+- the no-match message and exit 1, using a task whose tag matches but whose title does not.
+
+Before the feature they failed, because argparse rejects an unknown command (saved in `.git/litestack/acceptance-before.txt`):
+```
+test_search_hides_done_unless_all ... FAIL      AssertionError: '' != '[ ] 2 Buy bread\n'
+test_search_matches_title_ignoring_case ... FAIL  AssertionError: 2 != 0
+test_search_without_title_match ... FAIL        AssertionError: 2 != 1
+FAILED (failures=3)
+```
+After the feature, `Ran 7 tests ... OK` (saved in `.git/litestack/acceptance-after.txt`).
+
+I ran the real CLI from a script, `.git/litestack/drive.sh`, and kept its output in `.git/litestack/drive-after.txt`:
+```
+$ python3 -m tasks search MiLk        ->  [ ] 3 Oat MILK                 [exit 0]
+$ python3 -m tasks search milk --all  ->  [x] 1 Buy milk #home / [ ] 3 Oat MILK  [exit 0]
+$ python3 -m tasks search home        ->  No matching tasks.             [exit 1]
+list vs search "" -> identical;  list --all vs search "" --all -> identical
+```
+
+## Review
+- **Verdict:** PASS+NOTES. The reviewer ran every part of the request itself and every part passed.
+- **Findings:** none were raised, so nothing needed fixing or dismissing.
+
+**Needs your call** (each one says what the change does now):
+- `No matching tasks.` goes to stdout, not stderr. The request asked to match `list`, and `list` prints `No tasks.` to stdout.
+- An empty or missing task file prints `No matching tasks.` and exits 1. `list` prints `No tasks.` and exits 0 in that case.
+- `search ""` matches every task `list` would show. When every task is done, it prints `No matching tasks.` and exits 1.
+- Only the title is searched, never tags, because the request names the title.
+- Case is ignored using Python's full case folding, so `STRASSE` matches `Straße`.
+- Results come out in file order, the same as `list`.
+- `search` has no `--tag` filter, because the request did not ask for one.
+- A search for text starting with `-` needs `--` first, as in `search -- -x`.
+- `search --help` reads "list open tasks whose title contains text". The README gains two example lines.
+
+## Principles that changed a decision
+- **Model the domain.** I added no new type. Search is one filter over the existing `Task` list, printed with `Task.line()`.
+- **Design it as if it was always there.** Search is its own command beside `list`, not a flag or special case inside `list`.
+- **Smallest change.** I added no `--tag` and no shared helper for the one repeated filter line.
+- **Experience first.** It has help text and README examples. The empty message goes to stdout like `list`'s.
+- **Test behavior.** The tests check only stdout and exit codes. One uses a tag-only match to prove only titles are searched.
+- **Verifiable units.** The failing test went in first, marked `@unittest.expectedFailure`, then the feature commit removed the marks.
+- **Build the lever.** The marks were added and removed with one scripted pass each.
+- **Prove it works.** A scripted comparison showed `search ""` prints exactly what `list` prints, with and without `--all`.
+
+## Not verified
+- The project has no lint or type checker set up, so none ran.
+- I tested only on Python 3.9.6.
+- The app's task list is not available to a subagent, so I tracked the playbook steps in text instead.
+
+## Where it is
+Two commits on `feat/search-command`, with no uncommitted edits:
+- `6518ea4` test(cli): pin the search command as an expected failure
+- `fdecde8` feat(cli): add search command to find tasks by title
+
+Files changed, all under `/private/tmp/claude-501/-Users-ryan--claude-spares-spare-u1NzCf/69e29eb5-525f-441b-a171-2f2eff666512/scratchpad/evalwork/litestack-eval-subagent-a745e58-7588z0he/feature-search-3/repo`:
+- `tasks/cli.py`
+- `tests/test_cli.py`
+- `README.md`

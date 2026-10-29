@@ -1,0 +1,85 @@
+diff --git a/README.md b/README.md
+index 56ea579..2c064cd 100644
+--- a/README.md
++++ b/README.md
+@@ -9,6 +9,7 @@ python3 -m tasks list
+ python3 -m tasks list --tag home
+ python3 -m tasks done 1
+ python3 -m tasks list --all
++python3 -m tasks search milk
+ ```
+ 
+ Run the tests with `python3 -m unittest discover -s tests`.
+diff --git a/tasks/cli.py b/tasks/cli.py
+index 9f5650f..8c65877 100644
+--- a/tasks/cli.py
++++ b/tasks/cli.py
+@@ -27,6 +27,20 @@ def cmd_list(args):
+     return 0
+ 
+ 
++def cmd_search(args):
++    text = args.text.casefold()
++    tasks = [
++        t for t in store.load()
++        if (args.all or not t.done) and text in t.title.casefold()
++    ]
++    if not tasks:
++        print("No matching tasks.")
++        return 1
++    for task in tasks:
++        print(task.line())
++    return 0
++
++
+ def cmd_done(args):
+     tasks = store.load()
+     for task in tasks:
+@@ -53,6 +67,11 @@ def parser():
+     ls.add_argument("--all", action="store_true", help="include done tasks")
+     ls.set_defaults(run=cmd_list)
+ 
++    search = sub.add_parser("search", help="list open tasks whose title contains text")
++    search.add_argument("text")
++    search.add_argument("--all", action="store_true", help="include done tasks")
++    search.set_defaults(run=cmd_search)
++
+     done = sub.add_parser("done", help="mark a task done")
+     done.add_argument("id", type=int)
+     done.set_defaults(run=cmd_done)
+diff --git a/tests/test_cli.py b/tests/test_cli.py
+index 7b56bad..fecc4d2 100644
+--- a/tests/test_cli.py
++++ b/tests/test_cli.py
+@@ -41,6 +41,31 @@ class CliTest(unittest.TestCase):
+         self.assertEqual(result.returncode, 1)
+         self.assertEqual(result.stderr, "No task 9.\n")
+ 
++    def test_search_ignores_case(self):
++        self.run_cli("add", "Buy milk", "--tag", "home")
++        self.run_cli("add", "File taxes")
++        self.run_cli("add", "Milk the cow")
++        result = self.run_cli("search", "MILK")
++        self.assertEqual(result.returncode, 0)
++        self.assertEqual(result.stdout, "[ ] 1 Buy milk #home\n[ ] 3 Milk the cow\n")
++
++    def test_search_hides_done_unless_all(self):
++        self.run_cli("add", "Buy milk")
++        self.run_cli("add", "Buy bread")
++        self.run_cli("done", "1")
++        self.assertEqual(self.run_cli("search", "buy").stdout, "[ ] 2 Buy bread\n")
++        self.assertEqual(
++            self.run_cli("search", "buy", "--all").stdout,
++            "[x] 1 Buy milk\n[ ] 2 Buy bread\n",
++        )
++
++    def test_search_no_match(self):
++        self.run_cli("add", "Buy milk")
++        self.run_cli("done", "1")
++        for args in (["milk"], ["taxes", "--all"]):
++            result = self.run_cli("search", *args)
++            self.assertEqual((result.returncode, result.stdout), (1, "No matching tasks.\n"), args)
++
+ 
+ if __name__ == "__main__":
+     unittest.main()

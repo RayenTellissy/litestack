@@ -1,0 +1,57 @@
+{
+  "case": "feature-due-date",
+  "run": 3,
+  "kind": "feature",
+  "expect": "ship",
+  "mode": "subagent",
+  "workdir": "/private/tmp/claude-501/-Users-ryan--claude-spares-spare-u1NzCf/69e29eb5-525f-441b-a171-2f2eff666512/scratchpad/evalwork/litestack-eval-subagent-a745e58-7588z0he/feature-due-date-3/repo",
+  "base": "774e8a2c2f1843271cc9b5fce2912259e3911201",
+  "error": null,
+  "run_error": null,
+  "reply": "Tasks can now have an optional due date. `python3 -m tasks add \"Buy milk\" --tag home --due 2026-11-01` saves it, and `list` shows `[ ] 1 Buy milk #home due 2026-11-01`. `list --overdue` shows only open tasks that are past due, and prints `No tasks.` when there are none. An invalid date such as `2026-02-30` makes `add` exit with status 2 and saves nothing. Older task files load as before, and tasks without a due date print and save exactly as before. The work is in two commits on `feat/due-date`. There is no PR because the repository has no remote.\n\n**The shape and why**\n- `Task` has a new last field, `due: Optional[datetime.date] = None`. A `date` rather than a string makes the overdue check a plain date comparison.\n- Text becomes a `date` in two places. One is the argparse `type=` on `--due`, which rejects a bad date before anything is loaded or saved. The other is `store._decode`, which reads the file.\n- The file format lives only in `store.py`, in `_encode` and `_decode`. A dated task is saved as `\"due\": \"YYYY-MM-DD\"`. An undated task is saved with no `due` key, the same way older files store it.\n- The `--overdue` filter sits next to the existing `--tag` filter in `cmd_list`.\n- A designer subagent sketched this shape before the build and returned no Stop.\n\n**Acceptance check, failing and then passing**\n- I committed the new tests first, in `9ef26a7`, marked as expected failures. Run without the marks against the old code, they failed:\n  - `'tasks: error: unrecognized arguments: --due 2026-02-30' != \"tasks add: error: argument --due: invalid date value: '2026-02-30'\"`\n  - `Ran 9 tests in 1.034s` / `FAILED (failures=4)`\n- The old-file load test passed before the change, which is right for a backward-compatibility test.\n- After the feature commit and the review fix, `python3 -B -m unittest discover -s tests -v` gives `Ran 10 tests in 1.976s` / `OK`.\n- I also ran the real CLI with a script. Some lines from its output:\n  - `$ tasks list` \u2192 `[ ] 3 Pay rent #home due 2026-10-01` and `[ ] 1 Buy milk #home` (an undated task from an older file)\n  - `$ tasks add Bad --due 2026-02-30` \u2192 `tasks add: error: argument --due: invalid date value: '2026-02-30'` `(exit 2)`. `cmp` then confirmed the file was unchanged.\n  - `$ tasks list --overdue` on 2026-10-29 \u2192 only `[ ] 3 Pay rent #home due 2026-10-01`. The task due today and the one due 2026-11-01 were left out.\n\n**Review**\n- Verdict: PASS+NOTES. The reviewer tried every item in the request and all of them passed. It also ran `list`, `list --all` and `list --tag` with the old code and the new code on the same file, and the output was identical.\n- Fixed one finding (a nit). On Python 3.11 and later, `date.fromisoformat` also accepts forms like `20261101`, so a non-`YYYY-MM-DD` date would have been saved there. `parse_date` now rejects any value that doesn't read back as exactly `YYYY-MM-DD`. A new test covers `20261101`, `2026-W44-1` and `2026-1-5`. The fix is folded into the feature commit.\n- Nothing was dismissed.\n\n**Needs your call** (what the change does now):\n- `list --overdue --all` still shows only open tasks, because a done task is never overdue. `--overdue` combines with `--tag`.\n- A task due today is not overdue, since the request says \"earlier than today\". \"Today\" is the machine's local date.\n- An undated task is saved with no `due` key, so older versions of the tool can still read the file. A hand-written `\"due\": null` fails to load with a traceback, like other malformed files do today.\n- The invalid-date error uses argparse's normal output: a usage line, then `tasks add: error: argument --due: invalid date value: '<value>'`. Bad arguments such as `done abc` already produce this kind of error.\n- `--due` accepts only the exact `YYYY-MM-DD` form. If `--due` is given twice, the last one wins. `add --help` shows `--due YYYY-MM-DD` with no help text, the same as `--tag`.\n- A malformed `due` in a hand-edited `tasks.json` fails with a traceback, like other malformed files.\n\n**Principles that changed a decision**\n- Model the domain and Types: `due` is a `datetime.date`, not a string.\n- Boundaries: text is parsed once on the way in. A bad date fails in argparse, which is why nothing is saved. No guard in `cmd_add` is needed.\n- Design it as if it was always there: `due` is an ordinary dataclass field with a default, and the overdue filter sits with the other filters.\n- Smallest change: no `is_overdue` method, no injectable clock, and no new error handling for malformed files.\n- Experience first: the usage line shows `--due YYYY-MM-DD`, so the expected format is visible when the user gets it wrong.\n- Encode lessons in structure: the Python 3.11 format gap is covered by a test, not only a comment.\n- Verifiable units: the failing tests are committed first, then the feature.\n\n**Not verified**\n- I couldn't run Python 3.11 or later, because only 3.9.6 is available here. The fix should still reject other date forms there because `date.isoformat()` always returns `YYYY-MM-DD`, but that is inferred, not tested.\n- `test_list_overdue` adds a task due today, using the test process's date. It could fail if a run crosses midnight (inferred).\n- The project has no linter or type checker. I only compile-checked the files with `py_compile`.\n\n**Where things are**\n- Repository: `/private/tmp/claude-501/-Users-ryan--claude-spares-spare-u1NzCf/69e29eb5-525f-441b-a171-2f2eff666512/scratchpad/evalwork/litestack-eval-subagent-a745e58-7588z0he/feature-due-date-3/repo`\n- Branch `feat/due-date`, off `main` at `774e8a2`. The working tree is clean. Commits:\n  - `9ef26a7 test(tasks): pin due dates and list --overdue`\n  - `1776dd8 feat(tasks): add optional due dates and list --overdue`\n- Changed files: `tasks/model.py`, `tasks/store.py`, `tasks/cli.py`, `README.md`, `tests/test_cli.py`.\n- Evidence is in `.git/litestack/` inside the repository:\n  - `acceptance-before.txt` and `acceptance-after.txt`: test runs before and after the change.\n  - `surface.sh`, plus its output in `surface.txt` and `surface-after-fix.txt`: the CLI walkthrough.\n  - `xfail.py`: the script that added and removed the expected-failure marks.\n\nThere is no PR because the repository has no remote. The work stops at the commits above, and nothing else is open.",
+  "skill_invoked": true,
+  "wall_seconds": 655.4,
+  "final_context_tokens": 108662,
+  "tool_uses": 20,
+  "subagents": {
+    "litestack-designer": 1,
+    "litestack-reviewer": 1
+  },
+  "tokens": {
+    "inputTokens": 68,
+    "cacheCreationInputTokens": 232768,
+    "cacheReadInputTokens": 2328767,
+    "outputTokens": 63751
+  },
+  "grade": {
+    "tree": "/private/tmp/claude-501/-Users-ryan--claude-spares-spare-u1NzCf/69e29eb5-525f-441b-a171-2f2eff666512/scratchpad/evalwork/litestack-eval-subagent-a745e58-7588z0he/feature-due-date-3/repo",
+    "commits": 2,
+    "commit_titles": [
+      "test(tasks): pin due dates and list --overdue",
+      "feat(tasks): add optional due dates and list --overdue"
+    ],
+    "source_files_changed": [
+      "README.md",
+      "tasks/cli.py",
+      "tasks/model.py",
+      "tasks/store.py"
+    ],
+    "source_lines_added": 43,
+    "source_lines_deleted": 5,
+    "left_uncommitted": [],
+    "test_files_changed": [
+      "tests/test_cli.py"
+    ],
+    "said_stop": true,
+    "stopped": false,
+    "stop_correct": true,
+    "visible_exit": 0,
+    "visible_tail": "..........\n----------------------------------------------------------------------\nRan 10 tests in 1.880s\n\nOK\n",
+    "hidden_exit": 0,
+    "hidden_tail": "........\n----------------------------------------------------------------------\nRan 8 tests in 1.870s\n\nOK\n",
+    "pin_fails_on_base": true,
+    "test_commit_before_fix": true,
+    "duplicate_counts": [],
+    "pass": true
+  }
+}
